@@ -39,8 +39,8 @@ double ExchangeTerm(int m, int n, Eigen::MatrixXd &DensityMatrix, std::map<std::
     {
         for(int j = 0; j < DensityMatrix.cols(); j++)
         {
-            XTerm += DensityMatrix(i, j) * (Integrals[std::to_string(m) + " " + std::to_string(n) + " " + std::to_string(i) + " " + std::to_string(j)]
-                                    - 0.5 * Integrals[std::to_string(m) + " " + std::to_string(i) + " " + std::to_string(j) + " " + std::to_string(n)]);
+            XTerm += DensityMatrix(i, j) * (2 * Integrals[std::to_string(m + 1) + " " + std::to_string(n + 1) + " " + std::to_string(i + 1) + " " + std::to_string(j + 1)]
+                                              - Integrals[std::to_string(m + 1) + " " + std::to_string(i + 1) + " " + std::to_string(j + 1) + " " + std::to_string(n + 1)]);
         }
     }
     return XTerm;
@@ -58,7 +58,7 @@ void BuildFockMatrix(Eigen::MatrixXd &FockMatrix, Eigen::MatrixXd &DensityMatrix
     {
         for(int n = m; n < FockMatrix.cols(); n++)
         {
-            FockMatrix(m, n) = Integrals[std::to_string(m) + " " + std::to_string(n) + " 0 0"] 
+            FockMatrix(m, n) = Integrals[std::to_string(m + 1) + " " + std::to_string(n + 1) + " 0 0"] 
                              + ExchangeTerm(m, n, DensityMatrix, Integrals);
             FockMatrix(n, m) = FockMatrix(m, n);
         }

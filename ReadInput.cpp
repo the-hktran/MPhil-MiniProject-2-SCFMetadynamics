@@ -4,6 +4,7 @@
 #include <fstream>
 #include <map>
 #include "ReadInput.h"
+#include <Eigen/Dense>
 
 void InputObj::GetInputName()
 {
@@ -29,14 +30,11 @@ void InputObj::SetNames(char* Int, char* Overlap, char* Out)
                 (ij|kl)     i   j   k   l
    in the file titled "INTDUMP". Further modification must be made to this file in order to use it in my
    program. The first two lines must be deleted and the following entered (separated by spaces)
-            Number of alpha electrons
-            Number of orbitals to be occupied by the alpha electrons
-            Number of beta electrons
-            Number of orbitals to be occupied by the beta electrons
-            Number of solutions desired from Davidson Diagonalization
-   As an example, here is the first few lines of an input file for H2, which has one alpha and one beta 
-   electron and a space of four orbitals and we are looking for 2 solutions.
-            1 4 1 4 2
+            Number of orbitals
+			Number of occupied orbitals
+   As an example, here is the first few lines of an input file for H2, in a space of four orbitals with 
+   one occupied orbital
+            4 1
                 0.64985185942031   1   1   1   1
                 0.16712550470738   1   3   1   1
                 0.080102886434995  1   2   1   2
@@ -45,13 +43,15 @@ void InputObj::SetNames(char* Int, char* Overlap, char* Out)
 void InputObj::Set()
 {
     std::ifstream IntegralsFile(IntegralsInput.c_str());
+    IntegralsFile >> NumAO >> NumOcc;
     double tmpDouble;
     int tmpInt1, tmpInt2, tmpInt3, tmpInt4;
     while(!IntegralsFile.eof())
     {
         /* We have to include all 8-fold permuation symmetries. This holds each integral in chemistry notation. We represent
         (ij|kl) as "i j k l". h_ij is "i j 0 0", as given in QChem. */
-        IntegralsFile >> tmpDouble >> tmpInt1 >> tmpInt2 >> tmpInt3 >> tmpInt4;
+        // IntegralsFile >> tmpDouble >> tmpInt1 >> tmpInt2 >> tmpInt3 >> tmpInt4;
+        IntegralsFile >> tmpInt1 >> tmpInt2 >> tmpInt3 >> tmpInt4 >> tmpDouble;
         Integrals[std::to_string(tmpInt1) + " " + std::to_string(tmpInt2) + " " + std::to_string(tmpInt3) + " " + std::to_string(tmpInt4)] = tmpDouble;
         Integrals[std::to_string(tmpInt3) + " " + std::to_string(tmpInt4) + " " + std::to_string(tmpInt1) + " " + std::to_string(tmpInt2)] = tmpDouble;
         Integrals[std::to_string(tmpInt2) + " " + std::to_string(tmpInt1) + " " + std::to_string(tmpInt4) + " " + std::to_string(tmpInt3)] = tmpDouble;
@@ -63,4 +63,14 @@ void InputObj::Set()
     }
 
     std::ifstream OverlapFile(OverlapInput.c_str());
+    // OverlapMatrix = Eigen::MatrixXd::Identity(NumAO, NumAO);
+    OverlapMatrix = Eigen::MatrixXd::Zero(NumAO, NumAO);
+    while(!OverlapFile.eof())
+    {
+        OverlapFile >> tmpInt1 >> tmpInt2 >> tmpDouble;
+        OverlapMatrix(tmpInt1 - 1 ,tmpInt2 - 1) = tmpDouble;
+        OverlapMatrix(tmpInt2 - 1, tmpInt1 - 1) = tmpDouble;
+    }
+    // Read the overlap input here. Since Q-Chem uses a MO basis, we just set the overlap to be the identity. I should fix this when
+    // I use something other than Q-Chem, but then I would have to change the integrals too, so...
 }

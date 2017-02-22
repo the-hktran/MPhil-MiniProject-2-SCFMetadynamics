@@ -11,4 +11,6 @@ class InputObj
         std::string IntegralsInput;
         std::string OverlapInput;
         std::string OutputName;
+    private:
+        unsigned short int NumAO;
 };
