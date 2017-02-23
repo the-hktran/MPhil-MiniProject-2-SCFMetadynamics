@@ -11,6 +11,7 @@
 #include <ctime>
 
 void BuildFockMatrix(Eigen::MatrixXd &FockMatrix, Eigen::MatrixXd &DensityMatrix, std::map<std::string, double> &Integrals);
+double Metric(int NumElectrons, Eigen::MatrixXd &FirstDensityMatrix, Eigen::MatrixXd &SecondDensityMatrix);
 
 double CalcDensityRMS(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &DensityMatrixPrev)
 {
@@ -26,6 +27,26 @@ double CalcDensityRMS(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &DensityMa
     return DensityRMS;
 }
 
+/// <summary>
+/// One SCF iteration. Takes a density matrix, generates the corresponding Fock matrix, and then computes a new density
+/// matrix and the corresponding energy. The energy is returned.
+/// </summary>
+/// <param name="DensityMatrix">
+/// Density matrix of the current iteration.
+/// </param>
+/// <param name="Integrals">
+/// Map to value of two electron integrals.
+/// </param>
+/// <param name="HCore">
+/// Fock matrix generate from a zero density matrix. Stored because it can be reused for the generation of a new fock
+/// matrix and of the energy.
+/// </param>
+/// <param name="SOrtho">
+/// S^(-1/2), the symmetric orthogonalization matrix
+/// </param>
+/// <param name="NumOcc">
+/// Number of occupied orbitals. Used to calculate the density matrix.
+/// </param>
 double SCFIteration(Eigen::MatrixXd &DensityMatrix, std::map<std::string, double> &Integrals, Eigen::MatrixXd &HCore, Eigen::MatrixXd &SOrtho, unsigned short int NumOcc)
 {
     Eigen::MatrixXd FockMatrix(DensityMatrix.rows(), DensityMatrix.cols());
@@ -72,10 +93,12 @@ int main(int argc, char* argv[])
         Input.GetInputName();
     }
     Input.Set();
+	double SCFTol = 10E-12;
 
 	std::ofstream Output(Input.OutputName);
 
 	Output << "Self-Consistent Field Metadynamics Calculation" << std::endl;
+	Output << "\n" << Input.NumSoln << " solutions desired." << std::endl;
 
     unsigned int NumAO = Input.OverlapMatrix.rows();
 
@@ -110,7 +133,7 @@ int main(int argc, char* argv[])
 
     unsigned short int Count = 2;
 
-    while(fabs(DensityRMS) > 10E-12 || fabs(Energy - EnergyPrev) > 10E-12)
+    while(fabs(DensityRMS) > SCFTol || fabs(Energy - EnergyPrev) > SCFTol)
     {
         std::cout << "SCF MetaD: Iteration " << Count << "...";
         EnergyPrev = Energy;
