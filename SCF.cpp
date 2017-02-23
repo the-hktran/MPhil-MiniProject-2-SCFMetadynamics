@@ -10,7 +10,7 @@
 #include <Eigen/Eigenvalues>
 #include <ctime>
 
-void BuildFockMatrix(Eigen::MatrixXd &FockMatrix, Eigen::MatrixXd &DensityMatrix, std::map<std::string, double> &Integrals);
+void BuildFockMatrix(Eigen::MatrixXd &FockMatrix, Eigen::MatrixXd &DensityMatrix, std::map<std::string, double> &Integrals, std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int NumElectrons);
 double Metric(int NumElectrons, Eigen::MatrixXd &FirstDensityMatrix, Eigen::MatrixXd &SecondDensityMatrix);
 
 double CalcDensityRMS(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &DensityMatrixPrev)
@@ -47,11 +47,11 @@ double CalcDensityRMS(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &DensityMa
 /// <param name="NumOcc">
 /// Number of occupied orbitals. Used to calculate the density matrix.
 /// </param>
-double SCFIteration(Eigen::MatrixXd &DensityMatrix, std::map<std::string, double> &Integrals, Eigen::MatrixXd &HCore, Eigen::MatrixXd &SOrtho, unsigned short int NumOcc)
+double SCFIteration(Eigen::MatrixXd &DensityMatrix, InputObj &Input, Eigen::MatrixXd &HCore, Eigen::MatrixXd &SOrtho, std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias)
 {
     Eigen::MatrixXd FockMatrix(DensityMatrix.rows(), DensityMatrix.cols());
     double Energy = 0;
-    BuildFockMatrix(FockMatrix, DensityMatrix, Integrals);
+    BuildFockMatrix(FockMatrix, DensityMatrix, Input.Integrals, Bias, Input.NumElectrons);
     Eigen::MatrixXd FockOrtho = SOrtho.transpose() * FockMatrix * SOrtho;
     Eigen::SelfAdjointEigenSolver< Eigen::MatrixXd > EigensystemFockOrtho(FockOrtho);
     Eigen::MatrixXd CoeffMatrix = SOrtho * EigensystemFockOrtho.eigenvectors();
@@ -62,7 +62,7 @@ double SCFIteration(Eigen::MatrixXd &DensityMatrix, std::map<std::string, double
 		for (int j = 0; j < DensityMatrix.cols(); j++)
 		{
 			double DensityElement = 0;
-			for (int k = 0; k < NumOcc; k++)
+			for (int k = 0; k < Input.NumOcc; k++)
 			{
 				DensityElement += CoeffMatrix(i, k) * CoeffMatrix(j, k);
 			}
@@ -81,50 +81,18 @@ double SCFIteration(Eigen::MatrixXd &DensityMatrix, std::map<std::string, double
     return Energy;
 }
 
-int main(int argc, char* argv[])
+double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int SolnNum, Eigen::MatrixXd &DensityMatrix, InputObj &Input, std::ofstream &Output, Eigen::MatrixXd SOrtho, Eigen::MatrixXd HCore)
 {
-    InputObj Input;
-    if(argc == 4)
-    {
-        Input.SetNames(argv[1], argv[2], argv[3]);
-    }
-    else
-    {
-        Input.GetInputName();
-    }
-    Input.Set();
 	double SCFTol = 10E-12;
 
-	std::ofstream Output(Input.OutputName);
-
-	Output << "Self-Consistent Field Metadynamics Calculation" << std::endl;
-	Output << "\n" << Input.NumSoln << " solutions desired." << std::endl;
-
-    unsigned int NumAO = Input.OverlapMatrix.rows();
-
-    Eigen::SelfAdjointEigenSolver< Eigen::MatrixXd > EigensystemS(Input.OverlapMatrix);
-    Eigen::SparseMatrix< double > LambdaSOrtho(NumAO, NumAO); // Holds the inverse sqrt matrix of eigenvalues of S ( Lambda^-1/2 )
-    typedef Eigen::Triplet<double> T;
-    std::vector<T> tripletList;
-    for(int i = 0; i < NumAO; i++)
-    {
-        tripletList.push_back(T(i, i, 1 / sqrt(EigensystemS.eigenvalues()[i])));
-    }
-    LambdaSOrtho.setFromTriplets(tripletList.begin(), tripletList.end());
-    
-    Eigen::MatrixXd SOrtho = EigensystemS.eigenvectors() * LambdaSOrtho * EigensystemS.eigenvectors().transpose();
-    Eigen::MatrixXd DensityMatrix = Eigen::MatrixXd::Zero(NumAO, NumAO); // First guess of D set to zero.
-    Eigen::MatrixXd HCore(NumAO, NumAO);
-    BuildFockMatrix(HCore, DensityMatrix, Input.Integrals); // Form HCore (D is zero)
-
-	Output << "Beginning search for Solution " << 1 << std::endl;
+	Output << "Beginning search for Solution " << SolnNum << std::endl;
 	Output << "Iteration\tEnergy" << std::endl;
-	std::cout << "SCF MetaD: Beginning search for Solution " << 1 << std::endl;
+	std::cout << "SCF MetaD: Beginning search for Solution " << SolnNum << std::endl;
 	clock_t ClockStart = clock();
 
     /* We go through the SCF step once. */
 	std::cout << "SCF MetaD: Iteration 1...";
-    double Energy = SCFIteration(DensityMatrix, Input.Integrals, HCore, SOrtho, Input.NumOcc);
+    double Energy = SCFIteration(DensityMatrix, Input, HCore, SOrtho, Bias);
     Eigen::MatrixXd DensityMatrixPrev;
     double EnergyPrev = 1;
     double DensityRMS = 1;
@@ -138,16 +106,16 @@ int main(int argc, char* argv[])
         std::cout << "SCF MetaD: Iteration " << Count << "...";
         EnergyPrev = Energy;
         DensityMatrixPrev = DensityMatrix;
-        Energy = SCFIteration(DensityMatrix, Input.Integrals, HCore, SOrtho, Input.NumOcc);
+        Energy = SCFIteration(DensityMatrix, Input, HCore, SOrtho, Bias);
         DensityRMS = CalcDensityRMS(DensityMatrix, DensityMatrixPrev);
         std::cout << " complete with an energy of " << Energy + Input.Integrals["0 0 0 0"] << std::endl;
 		Output << Count << "\t" << Energy + Input.Integrals["0 0 0 0"] << std::endl;
         Count++;
     }
-	std::cout << "SCF MetaD: Solution " << 1 << " has converged with energy " << Energy + Input.Integrals["0 0 0 0"] << std::endl;
+	std::cout << "SCF MetaD: Solution " << SolnNum << " has converged with energy " << Energy + Input.Integrals["0 0 0 0"] << std::endl;
 	std::cout << "SCF MetaD: This solution took " << (clock() - ClockStart) / CLOCKS_PER_SEC << " seconds." << std::endl;
-	Output << "Solution " << 1 << " has converged with energy " << Energy + Input.Integrals["0 0 0 0"] << std::endl;
+	Output << "Solution " << SolnNum << " has converged with energy " << Energy + Input.Integrals["0 0 0 0"] << std::endl;
 	Output << "This solution took " << (clock() - ClockStart) / CLOCKS_PER_SEC << " seconds." << std::endl;
 
-    return 0;
+    return Energy;
 }

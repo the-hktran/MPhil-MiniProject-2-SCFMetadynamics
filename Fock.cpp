@@ -4,6 +4,9 @@
 #include <map>
 #include <string>
 
+double Metric(int NumElectrons, Eigen::MatrixXd &FirstDensityMatrix, Eigen::MatrixXd &SecondDensityMatrix);
+double BiasMatrixElement(int Row, int Col, std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, Eigen::MatrixXd &CurrentDensity, int NumElectrons);
+
 /// <summary>
 /// Calculates the electron-electron repulsion term for each matrix element of the Fock matrix: 
 /// F_mn = sum_ij D_ij [2 (mn|ij) - (mi|jn)]
@@ -46,14 +49,15 @@ double ExchangeTerm(int m, int n, Eigen::MatrixXd &DensityMatrix, std::map<std::
 /// <param name="Integrals">
 /// Map to value of two electron integrals.
 /// </param>
-void BuildFockMatrix(Eigen::MatrixXd &FockMatrix, Eigen::MatrixXd &DensityMatrix, std::map<std::string, double> &Integrals)
+void BuildFockMatrix(Eigen::MatrixXd &FockMatrix, Eigen::MatrixXd &DensityMatrix, std::map<std::string, double> &Integrals, std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int NumElectrons)
 {
     for(int m = 0; m < FockMatrix.rows(); m++)
     {
         for(int n = m; n < FockMatrix.cols(); n++)
         {
             FockMatrix(m, n) = Integrals[std::to_string(m + 1) + " " + std::to_string(n + 1) + " 0 0"] // This is HCore
-                             + ExchangeTerm(m, n, DensityMatrix, Integrals);
+                             + ExchangeTerm(m, n, DensityMatrix, Integrals)
+                             + BiasMatrixElement(m, n, Bias, DensityMatrix, NumElectrons);
             FockMatrix(n, m) = FockMatrix(m, n);
         }
     }

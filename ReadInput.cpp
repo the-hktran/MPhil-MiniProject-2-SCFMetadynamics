@@ -32,9 +32,10 @@ void InputObj::SetNames(char* Int, char* Overlap, char* Out)
    program. The first two lines must be deleted and the following entered (separated by spaces)
             Number of orbitals
 			Number of electrons
+            Number of solutions desired
    As an example, here is the first few lines of an input file for H2, in a space of four orbitals with 
-   two electrons
-            4 2
+   two electrons and we looking for 10 solutions
+            4 2 10
                 0.64985185942031   1   1   1   1
                 0.16712550470738   1   3   1   1
                 0.080102886434995  1   2   1   2
@@ -43,7 +44,7 @@ void InputObj::SetNames(char* Int, char* Overlap, char* Out)
 void InputObj::Set()
 {
     std::ifstream IntegralsFile(IntegralsInput.c_str());
-    IntegralsFile >> NumAO >> NumElectrons;
+    IntegralsFile >> NumAO >> NumElectrons >> NumSoln;
     double tmpDouble;
     int tmpInt1, tmpInt2, tmpInt3, tmpInt4;
     while(!IntegralsFile.eof())

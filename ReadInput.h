@@ -14,6 +14,5 @@ class InputObj
 		unsigned short int NumOcc;
 		unsigned short int NumSoln;
         unsigned short int NumElectrons;
-    private:
         unsigned short int NumAO;
 };
