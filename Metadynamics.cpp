@@ -8,9 +8,50 @@
 #include "ReadInput.h"
 #include <fstream>
 #include <map>
+#include <stdlib.h> 
 
-double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int SolnNum, Eigen::MatrixXd &DensityMatrix, InputObj &Input, std::ofstream &Output, Eigen::MatrixXd SOrtho, Eigen::MatrixXd HCore);
+double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int SolnNum, Eigen::MatrixXd &DensityMatrix, InputObj &Input, std::ofstream &Output, Eigen::MatrixXd &SOrtho, Eigen::MatrixXd &HCore, std::vector< double > &AllEnergies, Eigen::MatrixXd &CoeffMatrix);
 void BuildFockMatrix(Eigen::MatrixXd &FockMatrix, Eigen::MatrixXd &DensityMatrix, std::map<std::string, double> &Integrals, std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int NumElectrons);
+
+/* This function makes a new density matrix to be used for the next metadynamics iteration. It switches an occupied orbitals with
+   a random virtual orbital */
+void NewDensityMatrix(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &CoeffMatrix, int NumOcc, int NumAO)
+{
+    int ExcludedOcc = rand() % NumOcc;
+    int IncludedVirt = rand() % (NumAO - NumOcc);
+    for (int i = 0; i < DensityMatrix.rows(); i++)
+	{
+		for (int j = 0; j < DensityMatrix.cols(); j++)
+		{
+			double DensityElement = 0;
+			for (int k = 0; k < NumOcc; k++)
+			{
+                if(k == ExcludedOcc)
+                {
+                    DensityElement += CoeffMatrix(i, NumOcc + IncludedVirt) * CoeffMatrix(j, NumOcc + IncludedVirt);
+                }
+                else
+                {
+				    DensityElement += CoeffMatrix(i, k) * CoeffMatrix(j, k);
+                }
+			}
+			DensityMatrix(i, j) = DensityElement;
+		}
+	}
+
+}
+
+/* Increases N_x and lambda_x when SCF converges to the same solution */
+void ModifyBias(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias)
+{
+    for(int i = 0; i < Bias.size(); i++)
+    {
+        double NewNorm = std::get<1>(Bias[i]) + 0.1;
+        double NewLambda = std::get<2>(Bias[i]) + 0.1;
+        std::tuple< Eigen::MatrixXd, double, double > NewTuple = std::make_tuple(std::get<0>(Bias[i]), NewNorm, NewLambda);
+        Bias[i] = NewTuple;
+    }
+}
 
 double Metric(int NumElectrons, Eigen::MatrixXd &FirstDensityMatrix, Eigen::MatrixXd &SecondDensityMatrix)
 {
@@ -38,7 +79,7 @@ double BiasMatrixElement(int Row, int Col, std::vector< std::tuple< Eigen::Matri
 
 int main(int argc, char* argv[])
 {
-    std::vector< std::tuple< Eigen::MatrixXd, double, double > > Bias; // Tuple containing DensityMatrix, N_x, lambda_x, d^2_0x
+    std::vector< std::tuple< Eigen::MatrixXd, double, double > > Bias; // Tuple containing DensityMatrix, N_x, lambda_x
 
     InputObj Input;
     if(argc == 4)
@@ -54,9 +95,6 @@ int main(int argc, char* argv[])
 	std::ofstream Output(Input.OutputName);
 
 	Output << "Self-Consistent Field Metadynamics Calculation" << std::endl;
-	Output << "\n" << Input.NumSoln << " solutions desired." << std::endl;
-
-    Output << "Self-Consistent Field Metadynamics Calculation" << std::endl;
 	Output << "\n" << Input.NumSoln << " solutions desired." << std::endl;
 
     Eigen::SelfAdjointEigenSolver< Eigen::MatrixXd > EigensystemS(Input.OverlapMatrix);
@@ -77,12 +115,16 @@ int main(int argc, char* argv[])
     double CurrentEnergy;
     double PreviousEnergy;
 
+    std::vector< double > AllEnergies;
+    Eigen::MatrixXd CoeffMatrix = Eigen::MatrixXd::Zero(Input.NumAO, Input.NumAO);
+
     for(int i = 0; i < Input.NumSoln; i++)
     {
         PreviousEnergy = CurrentEnergy;
         std::tuple< Eigen::MatrixXd, double, double > tmpTuple;
-        CurrentEnergy = SCF(Bias, i + 1, DensityMatrix, Input, Output, SOrtho, HCore);
-        tmpTuple = std::make_tuple(DensityMatrix, 1, 1);
+        NewDensityMatrix(DensityMatrix, CoeffMatrix, Input.NumOcc, Input.NumAO);
+        CurrentEnergy = SCF(Bias, i + 1, DensityMatrix, Input, Output, SOrtho, HCore, AllEnergies, CoeffMatrix);
+        tmpTuple = std::make_tuple(DensityMatrix, 0.1, 0.1);
         Bias.push_back(tmpTuple);
     }
 

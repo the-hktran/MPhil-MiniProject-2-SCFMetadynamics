@@ -62,7 +62,7 @@ void InputObj::Set()
         Integrals[std::to_string(tmpInt1) + " " + std::to_string(tmpInt2) + " " + std::to_string(tmpInt4) + " " + std::to_string(tmpInt3)] = tmpDouble;
         Integrals[std::to_string(tmpInt3) + " " + std::to_string(tmpInt4) + " " + std::to_string(tmpInt2) + " " + std::to_string(tmpInt1)] = tmpDouble;
     }
-    NumOcc = NumElectrons / 2; // Floor division.
+    NumOcc = (NumElectrons + 1) / 2; // Floor division.
 
     OverlapMatrix = Eigen::MatrixXd::Identity(NumAO, NumAO);
 	/*std::ifstream OverlapFile(OverlapInput.c_str());
