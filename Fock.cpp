@@ -57,7 +57,7 @@ void BuildFockMatrix(Eigen::MatrixXd &FockMatrix, Eigen::MatrixXd &DensityMatrix
         {
             FockMatrix(m, n) = Integrals[std::to_string(m + 1) + " " + std::to_string(n + 1) + " 0 0"] // This is HCore
                              + ExchangeTerm(m, n, DensityMatrix, Integrals)
-                             + BiasMatrixElement(m, n, Bias, DensityMatrix, NumElectrons);
+                             + BiasMatrixElement(m, n, Bias, DensityMatrix, NumElectrons); // Metadynamics bias.
             FockMatrix(n, m) = FockMatrix(m, n);
         }
     }
