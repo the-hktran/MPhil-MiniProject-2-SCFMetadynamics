@@ -10,29 +10,29 @@
 #include <map>
 #include <stdlib.h> 
 
-double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int SolnNum, Eigen::MatrixXd &DensityMatrix, InputObj &Input, std::ofstream &Output, Eigen::MatrixXd &SOrtho, Eigen::MatrixXd &HCore, std::vector< double > &AllEnergies, Eigen::MatrixXd &CoeffMatrix);
+double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int SolnNum, Eigen::MatrixXd &DensityMatrix, InputObj &Input, std::ofstream &Output, Eigen::MatrixXd &SOrtho, Eigen::MatrixXd &HCore, std::vector< double > &AllEnergies, Eigen::MatrixXd &CoeffMatrix, std::vector<int> &OccupiedOrbitals, std::vector<int> &VirtualOrbitals);
 void BuildFockMatrix(Eigen::MatrixXd &FockMatrix, Eigen::MatrixXd &DensityMatrix, std::map<std::string, double> &Integrals, std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int NumElectrons);
 
 /* This function makes a new density matrix to be used for the next metadynamics iteration. It switches an occupied orbitals with
    a random virtual orbital */
-void NewDensityMatrix(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &CoeffMatrix, int NumOcc, int NumAO)
+void NewDensityMatrix(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &CoeffMatrix, std::vector<int> OccupiedOrbitals, std::vector<int> VirtualOrbitals)
 {
-    int ExcludedOcc = rand() % NumOcc;
-    int IncludedVirt = rand() % (NumAO - NumOcc);
+    int ExcludedOcc = rand() % OccupiedOrbitals.size();
+    int IncludedVirt = rand() % VirtualOrbitals.size();
     for (int i = 0; i < DensityMatrix.rows(); i++)
 	{
 		for (int j = 0; j < DensityMatrix.cols(); j++)
 		{
 			double DensityElement = 0;
-			for (int k = 0; k < NumOcc; k++)
+			for (int k = 0; k < OccupiedOrbitals.size(); k++)
 			{
                 if(k == ExcludedOcc)
                 {
-                    DensityElement += CoeffMatrix(i, NumOcc + IncludedVirt) * CoeffMatrix(j, NumOcc + IncludedVirt);
+                    DensityElement += CoeffMatrix(i, VirtualOrbitals[IncludedVirt]) * CoeffMatrix(j, VirtualOrbitals[IncludedVirt]);
                 }
                 else
                 {
-				    DensityElement += CoeffMatrix(i, k) * CoeffMatrix(j, k);
+				    DensityElement += CoeffMatrix(i, OccupiedOrbitals[k]) * CoeffMatrix(j, OccupiedOrbitals[k]);
                 }
 			}
 			DensityMatrix(i, j) = DensityElement;
@@ -48,6 +48,14 @@ void ModifyBias(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bi
     {
         double NewNorm = std::get<1>(Bias[i]) + 0.1;
         double NewLambda = std::get<2>(Bias[i]) + 0.1;
+        if(NewNorm > 20)
+        {
+            NewNorm = 20 * (rand() / RAND_MAX);
+        }
+        if(NewLambda > 20)
+        {
+            NewLambda = 20 * (rand() / RAND_MAX);
+        }
         std::tuple< Eigen::MatrixXd, double, double > NewTuple = std::make_tuple(std::get<0>(Bias[i]), NewNorm, NewLambda);
         Bias[i] = NewTuple;
     }
@@ -112,21 +120,25 @@ int main(int argc, char* argv[])
     Eigen::MatrixXd HCore(Input.NumAO, Input.NumAO);
     BuildFockMatrix(HCore, DensityMatrix, Input.Integrals, Bias, Input.NumElectrons); // Form HCore (D is zero)
 
-    double CurrentEnergy;
-    double PreviousEnergy;
+    double Energy;
 
     std::vector< double > AllEnergies;
     Eigen::MatrixXd CoeffMatrix = Eigen::MatrixXd::Zero(Input.NumAO, Input.NumAO);
+    std::vector<int> OccupiedOrbitals(Input.NumOcc);
+    std::vector<int> VirtualOrbitals(Input.NumAO - Input.NumOcc);
 
     for(int i = 0; i < Input.NumSoln; i++)
     {
-        PreviousEnergy = CurrentEnergy;
         std::tuple< Eigen::MatrixXd, double, double > tmpTuple;
-        NewDensityMatrix(DensityMatrix, CoeffMatrix, Input.NumOcc, Input.NumAO);
-        CurrentEnergy = SCF(Bias, i + 1, DensityMatrix, Input, Output, SOrtho, HCore, AllEnergies, CoeffMatrix);
+        NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals); // CoeffMatrix is zero so this doesn't do anything the  first time.
+        Energy = SCF(Bias, i + 1, DensityMatrix, Input, Output, SOrtho, HCore, AllEnergies, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
         tmpTuple = std::make_tuple(DensityMatrix, 0.1, 0.1);
         Bias.push_back(tmpTuple);
     }
+    // for(int i = 0; i < Bias.size(); i++)
+    // {
+    //     std::cout << std::get<0>(Bias[i]) << "\n" << std::get<1>(Bias[i]) << "\t" << std::get<2>(Bias[i]) << std::endl;
+    // }
 
     return 0;
 }
