@@ -19,6 +19,15 @@ void NewDensityMatrix(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &CoeffMatr
 {
     int ExcludedOcc = rand() % OccupiedOrbitals.size();
     int IncludedVirt = rand() % VirtualOrbitals.size();
+
+    double Cos = rand() / RAND_MAX; // A random value between 0 and 1;
+    double Sin = sqrt(1 - Cos * Cos); // Corresponding sin value.
+
+    Eigen::MatrixXd RotatedCoeff = CoeffMatrix;
+    for (int i = 0; i < RotatedCoeff.rows(); i++)
+    {
+        RotatedCoeff(i, OccupiedOrbitals[ExcludedOcc]) = Cos * CoeffMatrix(i, OccupiedOrbitals[ExcludedOcc]) - Sin * CoeffMatrix(i, VirtualOrbitals[IncludedVirt]);
+    }
     for (int i = 0; i < DensityMatrix.rows(); i++)
 	{
 		for (int j = 0; j < DensityMatrix.cols(); j++)
@@ -26,18 +35,30 @@ void NewDensityMatrix(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &CoeffMatr
 			double DensityElement = 0;
 			for (int k = 0; k < OccupiedOrbitals.size(); k++)
 			{
-                if(k == ExcludedOcc)
-                {
-                    DensityElement += CoeffMatrix(i, VirtualOrbitals[IncludedVirt]) * CoeffMatrix(j, VirtualOrbitals[IncludedVirt]);
-                }
-                else
-                {
-				    DensityElement += CoeffMatrix(i, OccupiedOrbitals[k]) * CoeffMatrix(j, OccupiedOrbitals[k]);
-                }
+				DensityElement += RotatedCoeff(i, OccupiedOrbitals[k]) * RotatedCoeff(j, OccupiedOrbitals[k]);
 			}
 			DensityMatrix(i, j) = DensityElement;
 		}
 	}
+    // for (int i = 0; i < DensityMatrix.rows(); i++)
+	// {
+	// 	for (int j = 0; j < DensityMatrix.cols(); j++)
+	// 	{
+	// 		double DensityElement = 0;
+	// 		for (int k = 0; k < OccupiedOrbitals.size(); k++)
+	// 		{
+    //             if(k == ExcludedOcc)
+    //             {
+    //                 DensityElement += CoeffMatrix(i, VirtualOrbitals[IncludedVirt]) * CoeffMatrix(j, VirtualOrbitals[IncludedVirt]);
+    //             }
+    //             else
+    //             {
+	// 			    DensityElement += CoeffMatrix(i, OccupiedOrbitals[k]) * CoeffMatrix(j, OccupiedOrbitals[k]);
+    //             }
+	// 		}
+	// 		DensityMatrix(i, j) = DensityElement;
+	// 	}
+	// }
 
 }
 
