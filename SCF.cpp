@@ -65,11 +65,7 @@ void DIIS(Eigen::MatrixXd &FockMatrix, std::vector< Eigen::MatrixXd > &AllFockMa
 void MaximumOverlapMethod(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &CoeffMatrix, Eigen::MatrixXd &CoeffMatrixPrev, Eigen::MatrixXd &OverlapMatrix, int NumOcc, int NumAO, std::vector<int> &OccupiedOrbitals, std::vector<int> &VirtualOrbitals) // MoM 
 {
     std::priority_queue< std::pair<double, int> > PQueue;
-    // std::cout << "\n" << CoeffMatrix << std::endl;
-    // if(CoeffMatrixPrev(0, 0) == 1) // Means that this is the first iteration. This step is important because the signs of the eigenvector affect the overlap. 
-    // {
-    //     CoeffMatrixPrev = CoeffMatrix;
-    // }
+
     for(int j = 0; j < CoeffMatrix.cols(); j++)
     {
         double Projection_j = 0;
@@ -89,6 +85,25 @@ void MaximumOverlapMethod(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &Coeff
         }
         PQueue.push(std::pair<double, int>(Projection_j, j));
     }
+    // for(int j = 0; j < CoeffMatrix.cols(); j++) // Just look at diagonal elements.
+    // {
+    //     double Projection_j = 0;
+    //     for(int i = 0; i < CoeffMatrixPrev.cols(); i++)
+    //     {
+    //         Projection_j += CoeffMatrix.col(j).dot(CoeffMatrixPrev.col(i));
+    //     }
+    //     for(int nu = 0; nu < CoeffMatrix.rows(); nu++)
+    //     {
+    //         for(int mu = 0; mu < CoeffMatrix.rows(); mu++)
+    //         {
+    //             //for(int i = 0; i < CoeffMatrix.cols(); i++)
+    //             //{
+    //                 Projection_j += (CoeffMatrixPrev.col(j)[mu] * OverlapMatrix(mu, nu) * CoeffMatrix.col(j)[nu]); // C_mu,j * S_mu,nu * C_nu,j
+    //             //}
+    //         }
+    //     }
+    //     PQueue.push(std::pair<double, int>(Projection_j, j));
+    // }
 
     for(int i = 0; i < NumOcc; i++)
     {
@@ -136,7 +151,7 @@ double CalcDensityRMS(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &DensityMa
             DensityRMS += (DensityMatrix(i, j) - DensityMatrixPrev(i, j)) * (DensityMatrix(i, j) - DensityMatrixPrev(i, j));
         }
     }
-    DensityRMS = sqrt(DensityRMS);
+    // DensityRMS = sqrt(DensityRMS);
     return DensityRMS;
 }
 
@@ -176,8 +191,23 @@ double SCFIteration(Eigen::MatrixXd &DensityMatrix, InputObj &Input, Eigen::Matr
     CoeffMatrix = SOrtho * EigensystemFockOrtho.eigenvectors();
 
 	/* Density matrix: C(occ) * C(occ)^T */
-    if(Bias.empty())
-    {
+    // if(!Bias.empty())
+    // {
+        // if(!Bias.empty())
+        // {
+        //     for(int i = 0; i < Input.NumAO; i++)
+        //     {
+        //         if(i < Input.NumOcc)
+        //         {
+        //             OccupiedOrbitals[i] = i;
+        //         }
+        //         else
+        //         {
+        //             VirtualOrbitals[Input.NumOcc - i] = i;
+        //         }
+        //     }
+        // }
+        
         for (int i = 0; i < DensityMatrix.rows(); i++)
         {
             for (int j = 0; j < DensityMatrix.cols(); j++)
@@ -190,24 +220,13 @@ double SCFIteration(Eigen::MatrixXd &DensityMatrix, InputObj &Input, Eigen::Matr
                 DensityMatrix(i, j) = DensityElement;
             }
         }
-        // for(int i = 0; i < Input.NumAO; i++)
-        // {
-        //     if(i < Input.NumOcc)
-        //     {
-        //         OccupiedOrbitals[i] = i;
-        //     }
-        //     else
-        //     {
-        //         VirtualOrbitals[Input.NumOcc - i] = i;
-        //     }
-        // }
         std::cout << "\nDensityMatrix\n" << DensityMatrix << std::endl;
-    }
-    else /* Use MoM to generate new density matrix, as well as determine the occupied and virtual orbitals */
-    {
-        MaximumOverlapMethod(DensityMatrix, CoeffMatrix, CoeffMatrixPrev, Input.OverlapMatrix, Input.NumOcc, Input.NumAO, OccupiedOrbitals, VirtualOrbitals); // MoM 
-        CoeffMatrixPrev = CoeffMatrix; // Now that we finish the MoM iteration, set CoeffMatrixPrev.
-    }
+    // }
+    // else /* Use MoM to generate new density matrix, as well as determine the occupied and virtual orbitals */
+    // {
+    //     MaximumOverlapMethod(DensityMatrix, CoeffMatrix, CoeffMatrixPrev, Input.OverlapMatrix, Input.NumOcc, Input.NumAO, OccupiedOrbitals, VirtualOrbitals); // MoM 
+    //     CoeffMatrixPrev = CoeffMatrix; // Now that we finish the MoM iteration, set CoeffMatrixPrev.
+    // }
 
 	/* Now calculate the energy. */
     for(int i = 0; i < FockMatrix.rows(); i++)
@@ -222,7 +241,7 @@ double SCFIteration(Eigen::MatrixXd &DensityMatrix, InputObj &Input, Eigen::Matr
 
 double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int SolnNum, Eigen::MatrixXd &DensityMatrix, InputObj &Input, std::ofstream &Output, Eigen::MatrixXd &SOrtho, Eigen::MatrixXd &HCore, std::vector< double > &AllEnergies, Eigen::MatrixXd &CoeffMatrix, std::vector<int> &OccupiedOrbitals, std::vector<int> &VirtualOrbitals)
 {
-	double SCFTol = 10E-12;
+	double SCFTol = 10E-10;
 
     // DensityMatrix = Eigen::MatrixXd::Zero(Input.NumAO, Input.NumAO);
 
@@ -245,7 +264,7 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
         std::vector< Eigen::MatrixXd > AllErrorMatrices; // Error matrices for DIIS
         Eigen::MatrixXd CoeffMatrixPrev = Eigen::MatrixXd::Identity(Input.NumAO, Input.NumAO); // For MoM
         DensityRMS = 1; // Reset loop.
-        while(fabs(DensityRMS) > SCFTol || fabs(Energy - EnergyPrev) > SCFTol)
+        while(fabs(DensityRMS) > SCFTol * SCFTol || fabs(Energy - EnergyPrev) > SCFTol * (fabs(Energy) + 1) || Count < 100)
         {
             std::cout << "SCF MetaD: Iteration " << Count << "...";
             EnergyPrev = Energy;
@@ -255,6 +274,11 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
             std::cout << " complete with a biased energy of " << Energy + Input.Integrals["0 0 0 0"] << std::endl;
             // Output << Count << "\t" << Energy + Input.Integrals["0 0 0 0"] << std::endl;
             Count++;
+            if(Count == 5) // Reset so that we have a good guess of density
+            {
+                AllFockMatrices.clear();
+                AllErrorMatrices.clear();
+            }
             if(Count > 500)
             {
             //     // NewDensityMatrix(DensityMatrix, CoeffMatrix, Input.NumOcc, Input.NumAO);
@@ -267,8 +291,8 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
                 Count = 1;
             }
             std::cout << "\nDensityRMS\n" << DensityRMS << std::endl;
-            std::string pause;
-            std::getline(std::cin, pause);
+            //std::string pause;
+            //std::getline(std::cin, pause);
         } // Means we have converged with the bias. Now we remove the bias and converge to the minimum.
         Count = 1;
         std::vector< std::tuple< Eigen::MatrixXd, double, double > > EmptyBias;
@@ -276,7 +300,7 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
         AllFockMatrices.clear();
         AllErrorMatrices.clear();
         DensityRMS = 1;
-        while(fabs(DensityRMS) > SCFTol || fabs(Energy - EnergyPrev) > SCFTol)
+        while(fabs(DensityRMS) > SCFTol * SCFTol || fabs(Energy - EnergyPrev) > SCFTol * (fabs(Energy) + 1) || Count < 100)
         {
             std::cout << "SCF MetaD: Iteration " << Count << "...";
             EnergyPrev = Energy;
@@ -298,8 +322,8 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
                 Count = 1;
             }
             std::cout << "\nDensityRMS\n" << DensityRMS << std::endl;
-            std::string pause;
-            std::getline(std::cin, pause);
+            //std::string pause;
+            //std::getline(std::cin, pause);
         }
         Count = 1;
         isUniqueSoln = true;
@@ -315,17 +339,11 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
             std::cout << "SCF MetaD: Solution is not unique. Retrying solution " << SolnNum << "." << std::endl;
             ModifyBias(Bias);
             // NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
-            // DensityMatrix = Eigen::MatrixXd::Random(DensityMatrix.rows(), DensityMatrix.cols());
+            DensityMatrix = Eigen::MatrixXd::Random(DensityMatrix.rows(), DensityMatrix.cols());
         }
     }
 
     AllEnergies.push_back(Energy + Input.Integrals["0 0 0 0"]);
-
-    // double EnergyBias = 0;
-    // for(int i = 0; i < Bias.size(); i++)
-    // {
-    //     EnergyBias += std::get<1>(Bias[i]) * exp(-1 * std::get<2>(Bias[i]) * Metric(Input.NumElectrons, DensityMatrix, std::get<0>(Bias[i])));
-    // }
 
 	std::cout << "SCF MetaD: Solution " << SolnNum << " has converged with energy " << Energy + Input.Integrals["0 0 0 0"] << std::endl;
 	std::cout << "SCF MetaD: This solution took " << (clock() - ClockStart) / CLOCKS_PER_SEC << " seconds." << std::endl;

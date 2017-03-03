@@ -69,13 +69,13 @@ void ModifyBias(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bi
     {
         double NewNorm = std::get<1>(Bias[i]) + 0.1;
         double NewLambda = std::get<2>(Bias[i]) + 0.1;
-        if(NewNorm > 20)
+        if(NewNorm > 10)
         {
-            NewNorm = 20 * (rand() / RAND_MAX);
+            NewNorm = 10 * (rand() / RAND_MAX);
         }
-        if(NewLambda > 20)
+        if(NewLambda > 1.5)
         {
-            NewLambda = 20 * (rand() / RAND_MAX);
+            NewLambda = 1.5 * (rand() / RAND_MAX);
         }
         std::tuple< Eigen::MatrixXd, double, double > NewTuple = std::make_tuple(std::get<0>(Bias[i]), NewNorm, NewLambda);
         Bias[i] = NewTuple;
@@ -147,6 +147,17 @@ int main(int argc, char* argv[])
     Eigen::MatrixXd CoeffMatrix = Eigen::MatrixXd::Zero(Input.NumAO, Input.NumAO);
     std::vector<int> OccupiedOrbitals(Input.NumOcc);
     std::vector<int> VirtualOrbitals(Input.NumAO - Input.NumOcc);
+    for(int i = 0; i < Input.NumAO; i++)
+    {
+        if(i < Input.NumOcc)
+        {
+            OccupiedOrbitals[i] = i;
+        }
+        else
+        {
+            VirtualOrbitals[i - Input.NumOcc] = i;
+        }
+    }
 
     for(int i = 0; i < Input.NumSoln; i++)
     {
