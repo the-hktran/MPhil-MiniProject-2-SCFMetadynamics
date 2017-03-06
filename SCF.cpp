@@ -136,12 +136,11 @@ void MaximumOverlapMethod(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &Coeff
 			DensityMatrix(i, j) = DensityElement;
 		}
     }
-
-    std::cout << "\nCoeff\n" << CoeffMatrix << "\nDensity\n" << DensityMatrix << std::endl;
-    for(int i = 0; i < OccupiedOrbitals.size(); i++)
-    {
-        std::cout << OccupiedOrbitals[i] << std::endl;
-    }
+    // std::cout << "\nCoeff\n" << CoeffMatrix << "\nDensity\n" << DensityMatrix << std::endl;
+    // for(int i = 0; i < OccupiedOrbitals.size(); i++)
+    // {
+    //     std::cout << OccupiedOrbitals[i] << std::endl;
+    // }
 }
 
 double CalcDensityRMS(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &DensityMatrixPrev)
@@ -312,8 +311,8 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
             //     Count = 1;
                 AllFockMatrices.clear();
                 AllErrorMatrices.clear();
-                NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
-                // GenerateRandomDensity(DensityMatrix);
+                // NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
+                GenerateRandomDensity(DensityMatrix);
                 // Count = 1;
             }
             std::cout << "\nDIIS Error\n" << DIISError << std::endl;
@@ -326,7 +325,7 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
         AllFockMatrices.clear();
         AllErrorMatrices.clear();
         DIISError = 1; // Reset for the next loop to start.
-        while(fabs(DIISError) > SCFTol * SCFTol || fabs(Energy - EnergyPrev) > SCFTol * (fabs(Energy) + 1)) // (fabs(DensityRMS) > SCFTol * SCFTol || fabs(Energy - EnergyPrev) > SCFTol * (fabs(Energy) + 1) || Count < 100)
+        while(fabs(DIISError) > SCFTol * SCFTol) // (fabs(DensityRMS) > SCFTol * SCFTol || fabs(Energy - EnergyPrev) > SCFTol * (fabs(Energy) + 1) || Count < 100)
         {
             std::cout << "SCF MetaD: Iteration " << Count << "...";
             EnergyPrev = Energy;
@@ -393,5 +392,5 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
 	Output << "Solution " << SolnNum << " has converged with energy " << Energy + Input.Integrals["0 0 0 0"] << std::endl;
 	Output << "This solution took " << (clock() - ClockStart) / CLOCKS_PER_SEC << " seconds." << std::endl;
 
-    return Energy;
+    return Energy + Input.Integrals["0 0 0 0"];
 }
