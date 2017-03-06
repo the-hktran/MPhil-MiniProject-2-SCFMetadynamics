@@ -17,6 +17,17 @@ double Metric(int NumElectrons, Eigen::MatrixXd &FirstDensityMatrix, Eigen::Matr
 void ModifyBias(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias);
 void NewDensityMatrix(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &CoeffMatrix, std::vector<int> OccupiedOrbitals, std::vector<int> VirtualOrbitals);
 
+void GenerateRandomDensity(Eigen::MatrixXd &DensityMatrix)
+{
+    for(int i = 0; i < DensityMatrix.rows(); i++)
+    {
+        for(int j = 0; j < DensityMatrix.cols(); j++)
+        {
+            DensityMatrix(i, j) = rand() / RAND_MAX;
+        }
+    }
+    DensityMatrix / DensityMatrix.trace();
+}
 double MatrixDot(Eigen::MatrixXd FirstMatrix, Eigen::MatrixXd SecondMatrix)
 {
     double Dot = 0;
@@ -344,7 +355,7 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
         Count = 1;
         isUniqueSoln = true;
         
-        if(Energy > 0)
+        if(Energy + Input.Integrals["0 0 0 0"] > 0)
         {
             isUniqueSoln = false;
         }
@@ -369,7 +380,8 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
                find a different solution. We could randomize the density matrix, but then we get 
                unphysical results. */
             // NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
-            DensityMatrix = Eigen::MatrixXd::Random(DensityMatrix.rows(), DensityMatrix.cols());
+            // DensityMatrix = Eigen::MatrixXd::Random(DensityMatrix.rows(), DensityMatrix.cols());
+            GenerateRandomDensity(DensityMatrix);
         }
     }
 
