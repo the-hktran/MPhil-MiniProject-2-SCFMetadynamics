@@ -65,10 +65,11 @@ void NewDensityMatrix(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &CoeffMatr
 /* Increases N_x and lambda_x when SCF converges to the same solution */
 void ModifyBias(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias)
 {
+    double BiasScale = 1.1; // Scale to increase and decrease parameters. Hard coded for now.
     for(int i = 0; i < Bias.size(); i++)
     {
-        double NewNorm = std::get<1>(Bias[i]) + 0.1;
-        double NewLambda = std::get<2>(Bias[i]) + 0.1;
+        double NewNorm = std::get<1>(Bias[i]) * BiasScale; // Increase height of Gaussian.
+        double NewLambda = std::get<2>(Bias[i]) / BiasScale; // Increase width of Gaussian (lambda is the inverse variance).
         if(NewNorm > 5)
         {
             NewNorm = 10 * (rand() / RAND_MAX);

@@ -99,7 +99,8 @@ void MaximumOverlapMethod(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &Coeff
                 }
             }
         }
-        PQueue.push(std::pair<double, int>(NewOrbitalTotalOverlap, j)); // Adds the value of the summed overlap to the queue.
+        PQueue.push(std::pair<double, int>(NewOrbitalTotalOverlap, j)); 
+        // Adds the value of the summed overlap to the queue.
         // The first value is the value of the overlap, which is used to order the list. The second value is the orbital number,
         // which is what we actually care about, and it will be the value we pull out of this queue.
     } // end loop over new orbitals j.
@@ -304,7 +305,7 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
                 AllErrorMatrices.clear();
             }
 
-            if(Count % 200 == 0) // Shouldn't take this long.
+            if(Count % 500 == 0) // Shouldn't take this long.
             {
             //     // NewDensityMatrix(DensityMatrix, CoeffMatrix, Input.NumOcc, Input.NumAO);
             //     // Count = 1;
@@ -344,7 +345,7 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
             //     AllErrorMatrices.clear();
             // }
 
-            if(Count % 200 == 0)
+            if(Count % 500 == 0)
             {
             //     // NewDensityMatrix(DensityMatrix, CoeffMatrix, Input.NumOcc, Input.NumAO);
             //     // Count = 1;

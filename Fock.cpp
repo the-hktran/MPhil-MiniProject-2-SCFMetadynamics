@@ -49,6 +49,12 @@ double ExchangeTerm(int m, int n, Eigen::MatrixXd &DensityMatrix, std::map<std::
 /// <param name="Integrals">
 /// Map to value of two electron integrals.
 /// </param>
+/// <param name="Bias">
+/// Vector of triples containing the biasing potential parameters (density matrix, N, lambda) for the metadynamics bias.
+/// </param>
+/// <param name="NumElectrons">
+/// Number of electrons in the system.
+/// </param>
 void BuildFockMatrix(Eigen::MatrixXd &FockMatrix, Eigen::MatrixXd &DensityMatrix, std::map<std::string, double> &Integrals, std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int NumElectrons)
 {
     for(int m = 0; m < FockMatrix.rows(); m++)
