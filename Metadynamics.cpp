@@ -69,7 +69,7 @@ void ModifyBias(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bi
     {
         double NewNorm = std::get<1>(Bias[i]) + 0.1;
         double NewLambda = std::get<2>(Bias[i]) + 0.1;
-        if(NewNorm > 10)
+        if(NewNorm > 5)
         {
             NewNorm = 10 * (rand() / RAND_MAX);
         }
@@ -137,9 +137,19 @@ int main(int argc, char* argv[])
     LambdaSOrtho.setFromTriplets(tripletList.begin(), tripletList.end());
     
     Eigen::MatrixXd SOrtho = EigensystemS.eigenvectors() * LambdaSOrtho * EigensystemS.eigenvectors().transpose();
-    Eigen::MatrixXd DensityMatrix = Eigen::MatrixXd::Zero(Input.NumAO, Input.NumAO); // First guess of D set to zero.
+
+    /* Initialize the density matrix. We're going to be smart about it and use the correct ground state density
+       corresponding to Q-Chem outputs. Q-Chem uses an MO basis for its output, so the density matrix has ones
+       along the diagonal for occupied orbitals. */
+    Eigen::MatrixXd DensityMatrix = Eigen::MatrixXd::Zero(Input.NumAO, Input.NumAO); //
+    for(int i = 0; i < Input.NumOcc; i++)
+    {
+        DensityMatrix(i, i) = 1;
+    }
+    
     Eigen::MatrixXd HCore(Input.NumAO, Input.NumAO);
-    BuildFockMatrix(HCore, DensityMatrix, Input.Integrals, Bias, Input.NumElectrons); // Form HCore (D is zero)
+    Eigen::MatrixXd ZeroMatrix = Eigen::MatrixXd::Zero(Input.NumAO, Input.NumAO);
+    BuildFockMatrix(HCore, ZeroMatrix, Input.Integrals, Bias, Input.NumElectrons); // Form HCore (D is zero)
 
     double Energy;
 
