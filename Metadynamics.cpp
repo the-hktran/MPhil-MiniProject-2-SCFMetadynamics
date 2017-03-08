@@ -70,13 +70,13 @@ void ModifyBias(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bi
     {
         double NewNorm = std::get<1>(Bias[i]) * BiasScale; // Increase height of Gaussian.
         double NewLambda = std::get<2>(Bias[i]) / BiasScale; // Increase width of Gaussian (lambda is the inverse variance).
-        if(NewNorm > 5)
+        if(NewNorm > 100)
         {
-            NewNorm = 10 * (rand() / RAND_MAX);
+            NewNorm = 100 * (rand() / RAND_MAX);
         }
-        if(NewLambda > 1.5)
+        if(NewLambda < 1E-10)
         {
-            NewLambda = 1.5 * (rand() / RAND_MAX);
+            NewLambda = 2 * (rand() / RAND_MAX) + 1E-10;
         }
         std::tuple< Eigen::MatrixXd, double, double > NewTuple = std::make_tuple(std::get<0>(Bias[i]), NewNorm, NewLambda);
         Bias[i] = NewTuple;
@@ -175,7 +175,7 @@ int main(int argc, char* argv[])
         std::tuple< Eigen::MatrixXd, double, double > tmpTuple;
         NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals); // CoeffMatrix is zero so this doesn't do anything the  first time.
         Energy = SCF(Bias, i + 1, DensityMatrix, Input, Output, SOrtho, HCore, AllEnergies, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
-        tmpTuple = std::make_tuple(DensityMatrix, 0.1, 0.1);
+        tmpTuple = std::make_tuple(DensityMatrix, 0.1, 1);
         Bias.push_back(tmpTuple);
     }
     // for(int i = 0; i < Bias.size(); i++)
