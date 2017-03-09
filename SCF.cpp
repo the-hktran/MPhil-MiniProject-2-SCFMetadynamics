@@ -14,7 +14,7 @@
 
 void BuildFockMatrix(Eigen::MatrixXd &FockMatrix, Eigen::MatrixXd &DensityMatrix, std::map<std::string, double> &Integrals, std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int NumElectrons);
 double Metric(int NumElectrons, Eigen::MatrixXd &FirstDensityMatrix, Eigen::MatrixXd &SecondDensityMatrix);
-void ModifyBias(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias);
+void ModifyBias(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, short int WhichSoln);
 void NewDensityMatrix(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &CoeffMatrix, std::vector<int> OccupiedOrbitals, std::vector<int> VirtualOrbitals);
 
 void GenerateRandomDensity(Eigen::MatrixXd &DensityMatrix)
@@ -360,9 +360,10 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
             // std::string pause;
             // std::getline(std::cin, pause);
         }
+
         isUniqueSoln = true;
-        
-        if(Energy + Input.Integrals["0 0 0 0"] > 0)
+        short int WhichSoln = -1; // If we found a solution we already visited, this will mark which of the previous solutions we are at.
+        if(Energy + Input.Integrals["0 0 0 0"] > 0) // Hopefully we won't be dissociating.
         {
             isUniqueSoln = false;
         }
@@ -370,9 +371,11 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
         {
             for(int i = 0; i < AllEnergies.size(); i++)
             {
-                if(fabs(Energy + Input.Integrals["0 0 0 0"] - AllEnergies[i]) < 10E-3) // Checks to see if new energy is equal to any previous energy.
+                if(fabs(Energy + Input.Integrals["0 0 0 0"] - AllEnergies[i]) < 10E-8) // Checks to see if new energy is equal to any previous energy.
                 {
-                    isUniqueSoln = false; // If it matches at least one, set this flag to false so the SCF procedure can repeat for this solution.
+                    isUniqueSoln = false; // If it matches at one, set this flag to false so the SCF procedure can repeat for this solution.
+                    WhichSoln = i;
+                    break;
                 }
             }
         }
@@ -380,14 +383,14 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
         if(!isUniqueSoln) // If the flag is still false, we modify the bias and hope that this gives a better result.
         {
             std::cout << "SCF MetaD: Solution is not unique. Retrying solution " << SolnNum << "." << std::endl;
-            ModifyBias(Bias); // Changes bias, usually means increase value of parameters.
+            ModifyBias(Bias, WhichSoln); // Changes bias, usually means increase value of parameters.
 
             /* We should also change the density matrix to converge to different solution, but it is not
                obvious how we should do that. We could rotate two orbitals, but this may not be enough to
                find a different solution. We could randomize the density matrix, but then we get 
                unphysical results. */
-            // NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
-            DensityMatrix = Eigen::MatrixXd::Random(DensityMatrix.rows(), DensityMatrix.cols());
+            NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
+            // DensityMatrix = Eigen::MatrixXd::Random(DensityMatrix.rows(), DensityMatrix.cols());
             // GenerateRandomDensity(DensityMatrix);
         }
     }

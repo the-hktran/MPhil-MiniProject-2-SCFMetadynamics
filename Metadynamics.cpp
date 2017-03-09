@@ -62,25 +62,26 @@ void NewDensityMatrix(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &CoeffMatr
 
 }
 
-/* Increases N_x and lambda_x when SCF converges to the same solution */
-void ModifyBias(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias)
+/* Increases N_x and decreases lambda_x when SCF converges to solution x */
+void ModifyBias(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, short int WhichSoln)
 {
-    double BiasScale = 1.1; // Scale to increase and decrease parameters. Hard coded for now.
-    for(int i = 0; i < Bias.size(); i++)
+    if(WhichSoln == -1) // Means the solution was positive, not reconverged. Don't do anything.
     {
-        double NewNorm = std::get<1>(Bias[i]) * BiasScale; // Increase height of Gaussian.
-        double NewLambda = std::get<2>(Bias[i]) / BiasScale; // Increase width of Gaussian (lambda is the inverse variance).
-        if(NewNorm > 100)
-        {
-            NewNorm = 100 * (rand() / RAND_MAX);
-        }
-        if(NewLambda < 1E-10)
-        {
-            NewLambda = 2 * (rand() / RAND_MAX) + 1E-10;
-        }
-        std::tuple< Eigen::MatrixXd, double, double > NewTuple = std::make_tuple(std::get<0>(Bias[i]), NewNorm, NewLambda);
-        Bias[i] = NewTuple;
+        return;
     }
+    double BiasScale = 1.1; // Scale to increase and decrease parameters. Hard coded for now.
+    double NewNorm = std::get<1>(Bias[WhichSoln]) * BiasScale; // Increase height of Gaussian.
+    double NewLambda = std::get<2>(Bias[WhichSoln]) / BiasScale; // Increase width of Gaussian (lambda is the inverse variance).
+    if(NewNorm > 100)
+    {
+        NewNorm = 100 * (rand() / RAND_MAX);
+    }
+    if(NewLambda < 1E-10)
+    {
+        NewLambda = 2 * (rand() / RAND_MAX) + 1E-10;
+    }
+    std::tuple< Eigen::MatrixXd, double, double > NewTuple = std::make_tuple(std::get<0>(Bias[WhichSoln]), NewNorm, NewLambda);
+    Bias[WhichSoln] = NewTuple;
 }
 
 double Metric(int NumElectrons, Eigen::MatrixXd &FirstDensityMatrix, Eigen::MatrixXd &SecondDensityMatrix)
