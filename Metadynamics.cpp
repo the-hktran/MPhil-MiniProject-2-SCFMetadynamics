@@ -71,11 +71,11 @@ void ModifyBias(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bi
     }
     double BiasScale = 1.1; // Scale to increase and decrease parameters. Hard coded for now.
     double NewNorm = std::get<1>(Bias[WhichSoln]) * BiasScale; // Increase height of Gaussian.
-    double NewLambda = std::get<2>(Bias[WhichSoln]) / BiasScale; // Increase width of Gaussian (lambda is the inverse variance).
-    if(NewNorm > 100)
-    {
-        NewNorm = 100 * (rand() / RAND_MAX);
-    }
+    double NewLambda = std::get<2>(Bias[WhichSoln]) / 1; // Increase width of Gaussian (lambda is the inverse variance).
+    // if(NewNorm > 100)
+    // {
+    //     NewNorm = 100 * (rand() / RAND_MAX);
+    // }
     if(NewLambda < 1E-10)
     {
         NewLambda = 2 * (rand() / RAND_MAX) + 1E-10;
@@ -144,10 +144,10 @@ int main(int argc, char* argv[])
        corresponding to Q-Chem outputs. Q-Chem uses an MO basis for its output, so the density matrix has ones
        along the diagonal for occupied orbitals. */
     Eigen::MatrixXd DensityMatrix = Eigen::MatrixXd::Zero(Input.NumAO, Input.NumAO); //
-    for(int i = 0; i < Input.NumOcc; i++)
-    {
-        DensityMatrix(i, i) = 1;
-    }
+    // for(int i = 0; i < Input.NumOcc; i++)
+    // {
+    //     DensityMatrix(i, i) = 1;
+    // }
     
     Eigen::MatrixXd HCore(Input.NumAO, Input.NumAO);
     Eigen::MatrixXd ZeroMatrix = Eigen::MatrixXd::Zero(Input.NumAO, Input.NumAO);
@@ -176,7 +176,7 @@ int main(int argc, char* argv[])
         std::tuple< Eigen::MatrixXd, double, double > tmpTuple;
         NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals); // CoeffMatrix is zero so this doesn't do anything the  first time.
         Energy = SCF(Bias, i + 1, DensityMatrix, Input, Output, SOrtho, HCore, AllEnergies, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
-        tmpTuple = std::make_tuple(DensityMatrix, 0.1, 1);
+        tmpTuple = std::make_tuple(DensityMatrix, 0.1, 15);
         Bias.push_back(tmpTuple);
     }
     // for(int i = 0; i < Bias.size(); i++)
