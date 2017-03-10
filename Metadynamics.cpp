@@ -9,6 +9,7 @@
 #include <fstream>
 #include <map>
 #include <stdlib.h> 
+#include <algorithm> // std::sort
 
 double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int SolnNum, Eigen::MatrixXd &DensityMatrix, InputObj &Input, std::ofstream &Output, Eigen::MatrixXd &SOrtho, Eigen::MatrixXd &HCore, std::vector< double > &AllEnergies, Eigen::MatrixXd &CoeffMatrix, std::vector<int> &OccupiedOrbitals, std::vector<int> &VirtualOrbitals);
 void BuildFockMatrix(Eigen::MatrixXd &FockMatrix, Eigen::MatrixXd &DensityMatrix, std::map<std::string, double> &Integrals, std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int NumElectrons);
@@ -123,6 +124,96 @@ int main(int argc, char* argv[])
     {
         Input.GetInputName();
     }
+
+    /* This part will do a scan. It repeats much of the part below. */
+    if(Input.doScan)
+    {
+        std::ofstream TotalOutput(Input.OutputName);
+        for(int IT = Input.ScanIntStart; IT <= Input.ScanIntEnd; IT++) // Loop over all scan iterations. Basically just pasted the rest of main into here.
+        {
+            /* Initialize a new object for each iteration */
+            InputObj IterationInput;
+            std::string IterationIntegralsName = Input.IntegralsInput + "_" + std::to_string(IT); // (integralsname)_1, ...
+            std::string IterationOverlapName = Input.OverlapInput + "_" + std::to_string(IT);
+            std::string IterationOutputName = Input.OutputName + "_" + std::to_string(IT);
+            std::vector<char> Int(IterationIntegralsName.begin(), IterationIntegralsName.end());
+            std::vector<char> Ov(IterationOverlapName.begin(), IterationOverlapName.end());
+            std::vector<char> Out(IterationOutputName.begin(), IterationOutputName.end());
+            IterationInput.SetNames(&Int[0], &Ov[0], &Out[0]);
+            IterationInput.Set();
+
+            /* Any mention of "Input" after this point is a bug. */
+            std::ofstream IterationOutput(IterationInput.OutputName);
+
+            IterationOutput << "Self-Consistent Field Metadynamics Calculation" << std::endl;
+            IterationOutput << "\n" << IterationInput.NumSoln << " solutions desired." << std::endl;
+
+            Eigen::SelfAdjointEigenSolver< Eigen::MatrixXd > EigensystemS(IterationInput.OverlapMatrix);
+            Eigen::SparseMatrix< double > LambdaSOrtho(IterationInput.NumAO, IterationInput.NumAO); // Holds the inverse sqrt matrix of eigenvalues of S ( Lambda^-1/2 )
+            typedef Eigen::Triplet<double> T;
+            std::vector<T> tripletList;
+            for(int i = 0; i < IterationInput.NumAO; i++)
+            {
+                tripletList.push_back(T(i, i, 1 / sqrt(EigensystemS.eigenvalues()[i])));
+            }
+            LambdaSOrtho.setFromTriplets(tripletList.begin(), tripletList.end());
+            
+            Eigen::MatrixXd SOrtho = EigensystemS.eigenvectors() * LambdaSOrtho * EigensystemS.eigenvectors().transpose();
+
+            /* Initialize the density matrix. We're going to be smart about it and use the correct ground state density
+            corresponding to Q-Chem outputs. Q-Chem uses an MO basis for its output, so the density matrix has ones
+            along the diagonal for occupied orbitals. */
+            Eigen::MatrixXd DensityMatrix = Eigen::MatrixXd::Zero(IterationInput.NumAO, IterationInput.NumAO); //
+            for(int i = 0; i < IterationInput.NumOcc; i++)
+            {
+                DensityMatrix(i, i) = 1;
+            }
+            
+            Eigen::MatrixXd HCore(IterationInput.NumAO, IterationInput.NumAO);
+            Eigen::MatrixXd ZeroMatrix = Eigen::MatrixXd::Zero(IterationInput.NumAO, IterationInput.NumAO);
+            BuildFockMatrix(HCore, ZeroMatrix, IterationInput.Integrals, Bias, IterationInput.NumElectrons); // Form HCore (D is zero)
+
+            double Energy;
+
+            std::vector< double > AllEnergies;
+            Eigen::MatrixXd CoeffMatrix = Eigen::MatrixXd::Zero(IterationInput.NumAO, IterationInput.NumAO);
+            std::vector<int> OccupiedOrbitals(IterationInput.NumOcc);
+            std::vector<int> VirtualOrbitals(IterationInput.NumAO - IterationInput.NumOcc);
+            for(int i = 0; i < IterationInput.NumAO; i++)
+            {
+                if(i < IterationInput.NumOcc)
+                {
+                    OccupiedOrbitals[i] = i;
+                }
+                else
+                {
+                    VirtualOrbitals[i - IterationInput.NumOcc] = i;
+                }
+            }
+
+            for(int i = 0; i < IterationInput.NumSoln; i++)
+            {
+                std::tuple< Eigen::MatrixXd, double, double > tmpTuple;
+                NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals); // CoeffMatrix is zero so this doesn't do anything the  first time.
+                Energy = SCF(Bias, i + 1, DensityMatrix, IterationInput, IterationOutput, SOrtho, HCore, AllEnergies, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
+                tmpTuple = std::make_tuple(DensityMatrix, 0.1, 1);
+                Bias.push_back(tmpTuple);
+            }
+
+            /* This ends the single point calculation. Now the output file records the information. */
+            std::sort(AllEnergies.begin(), AllEnergies.end()); // Adiabatic representation!
+            TotalOutput << Input.ScanValStart + (IT - 1) * Input.ScanValStep;
+            for(int i = 0; i < AllEnergies.size(); i++)
+            {
+                TotalOutput << "\t" << AllEnergies[i];
+            }
+            TotalOutput << std::endl;
+        }
+        return 0;
+    }
+
+    /* Everything below here is for a single point calculation. We handle scans before this and terminate the program
+       before this point. */
     Input.Set();
 
 	std::ofstream Output(Input.OutputName);

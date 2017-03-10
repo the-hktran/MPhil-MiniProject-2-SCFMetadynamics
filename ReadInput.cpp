@@ -5,6 +5,7 @@
 #include <map>
 #include "ReadInput.h"
 #include <Eigen/Dense>
+#include <string>
 
 void InputObj::GetInputName()
 {
@@ -48,10 +49,12 @@ void InputObj::SetNames(char* Int, char* Overlap, char* Out)
             Number of solutions desired
             Use DIIS? (1 / 0)
             Use MOM? (1 / 0)
+            How to step through density matrix space (1 / 0) = (Random / Rotation)
    As an example, here is the first few lines of an input file for H2, in a space of four orbitals with 
-   two electrons and we looking for 10 solutions. We want to use DIIS and MOM.
+   two electrons and we looking for 10 solutions. We want to use DIIS and MOM and we will choose a new density
+   by rotating an occupied and unoccupied orbital.
             4 2 10
-            1 1
+            1 1 0
                 0.64985185942031   1   1   1   1
                 0.16712550470738   1   3   1   1
                 0.080102886434995  1   2   1   2
@@ -61,22 +64,23 @@ void InputObj::Set()
 {
     std::ifstream IntegralsFile(IntegralsInput.c_str());
     IntegralsFile >> NumAO >> NumElectrons >> NumSoln;
+
+    /* DIIS and MOM options */
+    bool tmpBool; 
+    IntegralsFile >> tmpBool;
+    Options.push_back(tmpBool); // Use DIIS
+    IntegralsFile >> tmpBool;
+    Options.push_back(tmpBool); // Use MOM
+    IntegralsFile >> DensityOption;
+
     double tmpDouble;
     int tmpInt1, tmpInt2, tmpInt3, tmpInt4;
-    bool tmpBool; 
     while(!IntegralsFile.eof())
     {
         /* We have to include all 8-fold permuation symmetries. This holds each integral in chemistry notation. We represent
         (ij|kl) as "i j k l". h_ij is "i j 0 0", as given in QChem. */
         IntegralsFile >> tmpDouble >> tmpInt1 >> tmpInt2 >> tmpInt3 >> tmpInt4;
         // IntegralsFile >> tmpInt1 >> tmpInt2 >> tmpInt3 >> tmpInt4 >> tmpDouble;
-
-        /* DIIS and MOM options */
-        IntegralsFile >> tmpBool;
-        Options.push_back(tmpBool); // Use DIIS
-        IntegralsFile >> tmpBool;
-        Options.push_back(tmpBool); // Use MOM
-
         Integrals[std::to_string(tmpInt1) + " " + std::to_string(tmpInt2) + " " + std::to_string(tmpInt3) + " " + std::to_string(tmpInt4)] = tmpDouble;
         Integrals[std::to_string(tmpInt3) + " " + std::to_string(tmpInt4) + " " + std::to_string(tmpInt1) + " " + std::to_string(tmpInt2)] = tmpDouble;
         Integrals[std::to_string(tmpInt2) + " " + std::to_string(tmpInt1) + " " + std::to_string(tmpInt4) + " " + std::to_string(tmpInt3)] = tmpDouble;
@@ -86,7 +90,7 @@ void InputObj::Set()
         Integrals[std::to_string(tmpInt1) + " " + std::to_string(tmpInt2) + " " + std::to_string(tmpInt4) + " " + std::to_string(tmpInt3)] = tmpDouble;
         Integrals[std::to_string(tmpInt3) + " " + std::to_string(tmpInt4) + " " + std::to_string(tmpInt2) + " " + std::to_string(tmpInt1)] = tmpDouble;
     }
-    NumOcc = (NumElectrons + 1) / 2; // Floor division.
+    NumOcc = (NumElectrons + 1) / 2; // Floor division. This is RHF so just divide electrons by two.
 
     OverlapMatrix = Eigen::MatrixXd::Identity(NumAO, NumAO);
 	/*std::ifstream OverlapFile(OverlapInput.c_str());
@@ -99,4 +103,11 @@ void InputObj::Set()
     }*/
     // Read the overlap input here. Since Q-Chem uses a MO basis, we just set the overlap to be the identity. I should fix this when
     // I use something other than Q-Chem, but then I would have to change the integrals too, so...
+
+    if(DensityOption != 1 || DensityOption != 0)
+    {
+        std::cerr << "Something is wrong in the input file." << std::endl;
+        std::string tmpString;
+        std::getline(std::cin, tmpString);
+    }
 }

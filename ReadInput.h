@@ -17,9 +17,10 @@ class InputObj
         unsigned short int NumElectrons;
         unsigned short int NumAO;
         std::vector< bool > Options;
-        bool doScan;
+        bool doScan = false;
         int ScanIntStart;
         int ScanIntEnd;
         double ScanValStart;
         double ScanValStep;
+        int DensityOption = -1; // Will return an error if not set.
 };
