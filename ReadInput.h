@@ -1,4 +1,5 @@
 #include <Eigen/Dense>
+#include <vector>
 
 class InputObj
 {
@@ -15,4 +16,10 @@ class InputObj
 		unsigned short int NumSoln;
         unsigned short int NumElectrons;
         unsigned short int NumAO;
+        std::vector< bool > Options;
+        bool doScan;
+        int ScanIntStart;
+        int ScanIntEnd;
+        double ScanValStart;
+        double ScanValStep;
 };

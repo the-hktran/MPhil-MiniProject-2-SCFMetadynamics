@@ -181,10 +181,6 @@ int main(int argc, char* argv[])
         tmpTuple = std::make_tuple(DensityMatrix, 0.1, 1);
         Bias.push_back(tmpTuple);
     }
-    // for(int i = 0; i < Bias.size(); i++)
-    // {
-    //     std::cout << std::get<0>(Bias[i]) << "\n" << std::get<1>(Bias[i]) << "\t" << std::get<2>(Bias[i]) << std::endl;
-    // }
 
     return 0;
 }

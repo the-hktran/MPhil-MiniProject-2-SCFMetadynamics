@@ -14,6 +14,19 @@ void InputObj::GetInputName()
     std::cin >> OverlapInput;
     std::cout << "SCF MetaD: Enter output filename:\nSCF MetaD: ";
     std::cin >> OutputName;
+    std::cout << "SCF MetaD: Do a scan? (1 / 0):\nSCF MetaD: ";
+    std::cin >> doScan;
+    if(doScan)
+    {
+        std::cout << "SCF MetaD: Enter starting integer:\nSCF MetaD: ";
+        std::cin >> ScanIntStart;
+        std::cout << "SCF MetaD: Enter ending integer:\nSCF MetaD: ";
+        std::cin >> ScanIntEnd;
+        std::cout << "SCF MetaD: Enter starting value:\nSCF MetaD: ";
+        std::cin >> ScanValStart;
+        std::cout << "SCF MetaD: Enter step size:\nSCF MetaD: ";
+        std::cin >> ScanValStep;
+    }
 }
 
 void InputObj::SetNames(char* Int, char* Overlap, char* Out)
@@ -33,9 +46,12 @@ void InputObj::SetNames(char* Int, char* Overlap, char* Out)
             Number of orbitals
 			Number of electrons
             Number of solutions desired
+            Use DIIS? (1 / 0)
+            Use MOM? (1 / 0)
    As an example, here is the first few lines of an input file for H2, in a space of four orbitals with 
-   two electrons and we looking for 10 solutions
+   two electrons and we looking for 10 solutions. We want to use DIIS and MOM.
             4 2 10
+            1 1
                 0.64985185942031   1   1   1   1
                 0.16712550470738   1   3   1   1
                 0.080102886434995  1   2   1   2
@@ -47,12 +63,20 @@ void InputObj::Set()
     IntegralsFile >> NumAO >> NumElectrons >> NumSoln;
     double tmpDouble;
     int tmpInt1, tmpInt2, tmpInt3, tmpInt4;
+    bool tmpBool; 
     while(!IntegralsFile.eof())
     {
         /* We have to include all 8-fold permuation symmetries. This holds each integral in chemistry notation. We represent
         (ij|kl) as "i j k l". h_ij is "i j 0 0", as given in QChem. */
         IntegralsFile >> tmpDouble >> tmpInt1 >> tmpInt2 >> tmpInt3 >> tmpInt4;
         // IntegralsFile >> tmpInt1 >> tmpInt2 >> tmpInt3 >> tmpInt4 >> tmpDouble;
+
+        /* DIIS and MOM options */
+        IntegralsFile >> tmpBool;
+        Options.push_back(tmpBool); // Use DIIS
+        IntegralsFile >> tmpBool;
+        Options.push_back(tmpBool); // Use MOM
+
         Integrals[std::to_string(tmpInt1) + " " + std::to_string(tmpInt2) + " " + std::to_string(tmpInt3) + " " + std::to_string(tmpInt4)] = tmpDouble;
         Integrals[std::to_string(tmpInt3) + " " + std::to_string(tmpInt4) + " " + std::to_string(tmpInt1) + " " + std::to_string(tmpInt2)] = tmpDouble;
         Integrals[std::to_string(tmpInt2) + " " + std::to_string(tmpInt1) + " " + std::to_string(tmpInt4) + " " + std::to_string(tmpInt3)] = tmpDouble;
