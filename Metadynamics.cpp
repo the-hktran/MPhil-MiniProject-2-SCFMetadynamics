@@ -12,6 +12,7 @@
 
 double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int SolnNum, Eigen::MatrixXd &DensityMatrix, InputObj &Input, std::ofstream &Output, Eigen::MatrixXd &SOrtho, Eigen::MatrixXd &HCore, std::vector< double > &AllEnergies, Eigen::MatrixXd &CoeffMatrix, std::vector<int> &OccupiedOrbitals, std::vector<int> &VirtualOrbitals);
 void BuildFockMatrix(Eigen::MatrixXd &FockMatrix, Eigen::MatrixXd &DensityMatrix, std::map<std::string, double> &Integrals, std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int NumElectrons);
+void GenerateRandomDensity(Eigen::MatrixXd &DensityMatrix);
 
 /* This function makes a new density matrix to be used for the next metadynamics iteration. It switches an occupied orbitals with
    a random virtual orbital */
@@ -20,8 +21,9 @@ void NewDensityMatrix(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &CoeffMatr
     int ExcludedOcc = rand() % OccupiedOrbitals.size();
     int IncludedVirt = rand() % VirtualOrbitals.size();
 
-    double Cos = rand() / RAND_MAX; // A random value between 0 and 1;
+    double Cos = 1 - 2 * (rand() / RAND_MAX); // A random value between -1 and 1;
     double Sin = sqrt(1 - Cos * Cos); // Corresponding sin value.
+    rand() % 2 == 0 ? : Sin = -1 * Sin; // Random parity.
 
     Eigen::MatrixXd RotatedCoeff = CoeffMatrix;
     for (int i = 0; i < RotatedCoeff.rows(); i++)
@@ -71,7 +73,7 @@ void ModifyBias(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bi
     }
     double BiasScale = 1.1; // Scale to increase and decrease parameters. Hard coded for now.
     double NewNorm = std::get<1>(Bias[WhichSoln]) * BiasScale; // Increase height of Gaussian.
-    double NewLambda = std::get<2>(Bias[WhichSoln]) / 1; // Increase width of Gaussian (lambda is the inverse variance).
+    double NewLambda = std::get<2>(Bias[WhichSoln]) / BiasScale; // Increase width of Gaussian (lambda is the inverse variance).
     // if(NewNorm > 100)
     // {
     //     NewNorm = 100 * (rand() / RAND_MAX);
@@ -144,10 +146,10 @@ int main(int argc, char* argv[])
        corresponding to Q-Chem outputs. Q-Chem uses an MO basis for its output, so the density matrix has ones
        along the diagonal for occupied orbitals. */
     Eigen::MatrixXd DensityMatrix = Eigen::MatrixXd::Zero(Input.NumAO, Input.NumAO); //
-    // for(int i = 0; i < Input.NumOcc; i++)
-    // {
-    //     DensityMatrix(i, i) = 1;
-    // }
+    for(int i = 0; i < Input.NumOcc; i++)
+    {
+        DensityMatrix(i, i) = 1;
+    }
     
     Eigen::MatrixXd HCore(Input.NumAO, Input.NumAO);
     Eigen::MatrixXd ZeroMatrix = Eigen::MatrixXd::Zero(Input.NumAO, Input.NumAO);
@@ -176,7 +178,7 @@ int main(int argc, char* argv[])
         std::tuple< Eigen::MatrixXd, double, double > tmpTuple;
         NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals); // CoeffMatrix is zero so this doesn't do anything the  first time.
         Energy = SCF(Bias, i + 1, DensityMatrix, Input, Output, SOrtho, HCore, AllEnergies, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
-        tmpTuple = std::make_tuple(DensityMatrix, 0.1, 15);
+        tmpTuple = std::make_tuple(DensityMatrix, 0.1, 1);
         Bias.push_back(tmpTuple);
     }
     // for(int i = 0; i < Bias.size(); i++)
