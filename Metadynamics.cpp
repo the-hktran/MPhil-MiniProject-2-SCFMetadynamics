@@ -129,6 +129,8 @@ int main(int argc, char* argv[])
     if(Input.doScan)
     {
         std::ofstream TotalOutput(Input.OutputName);
+        TotalOutput << "Self-Consistent Field Metadynamics Scan\n" << std::endl;
+        TotalOutput << "Steps from " << Input.ScanIntStart << " to " << Input.ScanIntEnd << std::endl;
         for(int IT = Input.ScanIntStart; IT <= Input.ScanIntEnd; IT++) // Loop over all scan iterations. Basically just pasted the rest of main into here.
         {
             /* Initialize a new object for each iteration */
@@ -136,10 +138,7 @@ int main(int argc, char* argv[])
             std::string IterationIntegralsName = Input.IntegralsInput + "_" + std::to_string(IT); // (integralsname)_1, ...
             std::string IterationOverlapName = Input.OverlapInput + "_" + std::to_string(IT);
             std::string IterationOutputName = Input.OutputName + "_" + std::to_string(IT);
-            std::vector<char> Int(IterationIntegralsName.begin(), IterationIntegralsName.end());
-            std::vector<char> Ov(IterationOverlapName.begin(), IterationOverlapName.end());
-            std::vector<char> Out(IterationOutputName.begin(), IterationOutputName.end());
-            IterationInput.SetNames(&Int[0], &Ov[0], &Out[0]);
+            IterationInput.SetNames(IterationIntegralsName, IterationOverlapName, IterationOutputName);
             IterationInput.Set();
 
             /* Any mention of "Input" after this point is a bug. */
@@ -217,7 +216,7 @@ int main(int argc, char* argv[])
             TotalOutput << std::endl;
         }
         return 0;
-    }
+    } // end scan loop
 
     /* Everything below here is for a single point calculation. We handle scans before this and terminate the program
        before this point. */
@@ -283,7 +282,8 @@ int main(int argc, char* argv[])
         std::tuple< Eigen::MatrixXd, double, double > tmpTuple;
         NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals); // CoeffMatrix is zero so this doesn't do anything the  first time.
         Energy = SCF(Bias, i + 1, DensityMatrix, Input, Output, SOrtho, HCore, AllEnergies, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
-        tmpTuple = std::make_tuple(DensityMatrix, 0.1, 10);
+        // tmpTuple = std::make_tuple(DensityMatrix, 0.1, 10); // H4
+        tmpTuple = std::make_tuple(DensityMatrix, 0.1, 1);
         Bias.push_back(tmpTuple);
     }
 

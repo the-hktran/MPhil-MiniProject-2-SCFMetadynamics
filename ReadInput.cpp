@@ -37,6 +37,13 @@ void InputObj::SetNames(char* Int, char* Overlap, char* Out)
     OutputName = Out;
 }
 
+void InputObj::SetNames(std::string Int, std::string Overlap, std::string Out)
+{
+    IntegralsInput = Int;
+    OverlapInput = Overlap;
+    OutputName = Out;
+}
+
 /*****                                    FORMAT OF THE INPUT FILE                                 *****/
 /* The input file is taken from the integrals computed in QChem (version 4.4). To obtain these integrals,
    the line "CORRELATION idump" must be added to the %rem section of the QChem input. This outputs a list

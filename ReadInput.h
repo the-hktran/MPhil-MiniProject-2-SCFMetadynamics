@@ -6,6 +6,7 @@ class InputObj
     public:
         void GetInputName();
         void SetNames(char*, char*, char*);
+        void SetNames(std::string, std::string, std::string);
         void Set();
         std::map< std::string, double > Integrals;
         Eigen::MatrixXd OverlapMatrix;

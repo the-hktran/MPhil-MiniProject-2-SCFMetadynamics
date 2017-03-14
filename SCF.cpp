@@ -200,10 +200,11 @@ double SCFIteration(Eigen::MatrixXd &DensityMatrix, InputObj &Input, Eigen::Matr
     
     Eigen::MatrixXd ErrorMatrix = FockMatrix * DensityMatrix * Input.OverlapMatrix - Input.OverlapMatrix * DensityMatrix * FockMatrix; // DIIS error matrix of the current iteration: FPS - SPF
     AllErrorMatrices.push_back(ErrorMatrix); // Save error matrix for DIIS.
-    if(Input.Options[0]) // Means use DIIS.
-    {
-        DIIS(FockMatrix, AllFockMatrices, AllErrorMatrices); // Generates F' using DIIS and stores it in FockMatrix.
-    } // If DIIS isn't being used, nothing needs to be done.
+    // if(Input.Options[0]) // Means use DIIS.
+    // {
+    //     DIIS(FockMatrix, AllFockMatrices, AllErrorMatrices); // Generates F' using DIIS and stores it in FockMatrix.
+    // } // If DIIS isn't being used, nothing needs to be done.
+    DIIS(FockMatrix, AllFockMatrices, AllErrorMatrices); // Generates F' using DIIS and stores it in FockMatrix.
 
     Eigen::MatrixXd FockOrtho = SOrtho.transpose() * FockMatrix * SOrtho; // Fock matrix in orthonormal basis.
     Eigen::SelfAdjointEigenSolver< Eigen::MatrixXd > EigensystemFockOrtho(FockOrtho); // Eigenvectors and eigenvalues ordered from lowest to highest eigenvalues
@@ -330,7 +331,15 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
                     ContinueSCF = true;
                 }
             }
-            std::cout << " complete with a biased energy of " << Energy + Input.Integrals["0 0 0 0"] << " and DIIS error of " << DIISError << std::endl;
+            std::cout << " complete with a biased energy of " << Energy + Input.Integrals["0 0 0 0"];
+            if(Input.Options[1] == 1)
+            {
+                std::cout << " and DIIS error of " << DIISError << std::endl;
+            }
+            if(Input.Options[1] == 0)
+            {
+                std::cout << " and Density RMS of " << DensityRMS << std::endl;
+            }
             // Output << Count << "\t" << Energy + Input.Integrals["0 0 0 0"] << std::endl;
             Count++;
 
@@ -402,7 +411,15 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
                     ContinueSCF = true;
                 }
             }
-            std::cout << " complete with an energy of " << Energy + Input.Integrals["0 0 0 0"] << " and DIIS error of " << DIISError << std::endl;
+            std::cout << " complete with an energy of " << Energy + Input.Integrals["0 0 0 0"];//  << " and DIIS error of " << DIISError << std::endl;
+            if(Input.Options[1] == 1)
+            {
+                std::cout << " and DIIS error of " << DIISError << std::endl;
+            }
+            if(Input.Options[1] == 0)
+            {
+                std::cout << " and Density RMS of " << DensityRMS << std::endl;
+            }
             // Output << Count << "\t" << Energy + Input.Integrals["0 0 0 0"] << std::endl;
             Count++;
 
