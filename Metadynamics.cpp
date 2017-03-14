@@ -75,13 +75,13 @@ void ModifyBias(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bi
     double BiasScale = 1.1; // Scale to increase and decrease parameters. Hard coded for now.
     double NewNorm = std::get<1>(Bias[WhichSoln]) * BiasScale; // Increase height of Gaussian.
     double NewLambda = std::get<2>(Bias[WhichSoln]) / BiasScale; // Increase width of Gaussian (lambda is the inverse variance).
-    // if(NewNorm > 100)
-    // {
-    //     NewNorm = 100 * (rand() / RAND_MAX);
-    // }
+    if(NewNorm > 100)
+    {
+        NewNorm = 100 * (rand() / RAND_MAX);
+    }
     if(NewLambda < 1E-10)
     {
-        NewLambda = 2 * (rand() / RAND_MAX) + 1E-10;
+        NewLambda = 20 * (rand() / RAND_MAX) + 1E-10;
     }
     std::tuple< Eigen::MatrixXd, double, double > NewTuple = std::make_tuple(std::get<0>(Bias[WhichSoln]), NewNorm, NewLambda);
     Bias[WhichSoln] = NewTuple;
@@ -147,6 +147,13 @@ int main(int argc, char* argv[])
 
             IterationOutput << "Self-Consistent Field Metadynamics Calculation" << std::endl;
             IterationOutput << "\n" << IterationInput.NumSoln << " solutions desired." << std::endl;
+
+            IterationOutput << "\n" << "Settings:" << std::endl;
+            IterationOutput << "Number of Orbitals = " << IterationInput.NumAO << std::endl;
+            IterationOutput << "Number of Electrons = " << IterationInput.NumElectrons << std::endl;
+            IterationOutput << "Use DIIS?: " << IterationInput.Options[0] << std::endl;
+            IterationOutput << "Use MOM?: " << IterationInput.Options[1] << std::endl;
+            IterationOutput << "Density choice: " << IterationInput.DensityOption << std::endl;
 
             Eigen::SelfAdjointEigenSolver< Eigen::MatrixXd > EigensystemS(IterationInput.OverlapMatrix);
             Eigen::SparseMatrix< double > LambdaSOrtho(IterationInput.NumAO, IterationInput.NumAO); // Holds the inverse sqrt matrix of eigenvalues of S ( Lambda^-1/2 )
@@ -221,6 +228,13 @@ int main(int argc, char* argv[])
 	Output << "Self-Consistent Field Metadynamics Calculation" << std::endl;
 	Output << "\n" << Input.NumSoln << " solutions desired." << std::endl;
 
+    Output << "\n" << "Settings:" << std::endl;
+    Output << "Number of Orbitals = " << Input.NumAO << std::endl;
+    Output << "Number of Electrons = " << Input.NumElectrons << std::endl;
+    Output << "Use DIIS?: " << Input.Options[0] << std::endl;
+    Output << "Use MOM?: " << Input.Options[1] << std::endl;
+    Output << "Density choice: " << Input.DensityOption << std::endl;
+
     Eigen::SelfAdjointEigenSolver< Eigen::MatrixXd > EigensystemS(Input.OverlapMatrix);
     Eigen::SparseMatrix< double > LambdaSOrtho(Input.NumAO, Input.NumAO); // Holds the inverse sqrt matrix of eigenvalues of S ( Lambda^-1/2 )
     typedef Eigen::Triplet<double> T;
@@ -269,7 +283,7 @@ int main(int argc, char* argv[])
         std::tuple< Eigen::MatrixXd, double, double > tmpTuple;
         NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals); // CoeffMatrix is zero so this doesn't do anything the  first time.
         Energy = SCF(Bias, i + 1, DensityMatrix, Input, Output, SOrtho, HCore, AllEnergies, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
-        tmpTuple = std::make_tuple(DensityMatrix, 0.1, 1);
+        tmpTuple = std::make_tuple(DensityMatrix, 0.1, 10);
         Bias.push_back(tmpTuple);
     }
 

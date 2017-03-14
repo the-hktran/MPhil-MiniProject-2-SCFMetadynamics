@@ -66,12 +66,11 @@ void InputObj::Set()
     IntegralsFile >> NumAO >> NumElectrons >> NumSoln;
 
     /* DIIS and MOM options */
-    bool tmpBool; 
-    IntegralsFile >> tmpBool;
-    Options.push_back(tmpBool); // Use DIIS
-    IntegralsFile >> tmpBool;
-    Options.push_back(tmpBool); // Use MOM
-    IntegralsFile >> DensityOption;
+    bool tmpBool1;
+    bool tmpBool2; 
+    IntegralsFile >> tmpBool1 >> tmpBool2 >> DensityOption;
+    Options.push_back(tmpBool1); // Use DIIS
+    Options.push_back(tmpBool2); // Use MOM
 
     double tmpDouble;
     int tmpInt1, tmpInt2, tmpInt3, tmpInt4;
@@ -104,7 +103,7 @@ void InputObj::Set()
     // Read the overlap input here. Since Q-Chem uses a MO basis, we just set the overlap to be the identity. I should fix this when
     // I use something other than Q-Chem, but then I would have to change the integrals too, so...
 
-    if(DensityOption != 1 || DensityOption != 0)
+    if(DensityOption != 1 && DensityOption != 0 && DensityOption != 2)
     {
         std::cerr << "Something is wrong in the input file." << std::endl;
         std::string tmpString;

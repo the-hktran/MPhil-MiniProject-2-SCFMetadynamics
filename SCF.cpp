@@ -294,6 +294,7 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
         // DIISError = 1; /// First guess of D set to zero. Reset loop.
         // DIISAbs = 1;
         ContinueSCF = true;
+        Count = 1;
         while((ContinueSCF || Count < 15) && !Bias.empty()) // Do 15 times atleast, but skip if this is the first SCF.
         {
             std::cout << "SCF MetaD: Iteration " << Count << "...";
@@ -310,6 +311,10 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
                {
                    ContinueSCF = false;
                }
+               else
+               {
+                   ContinueSCF = true;
+               }
             }
             else // Use DIIS, check DIIS error instead.
             {
@@ -320,6 +325,10 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
                 {
                     ContinueSCF = false;
                 }
+                else
+                {
+                    ContinueSCF = true;
+                }
             }
             std::cout << " complete with a biased energy of " << Energy + Input.Integrals["0 0 0 0"] << " and DIIS error of " << DIISError << std::endl;
             // Output << Count << "\t" << Energy + Input.Integrals["0 0 0 0"] << std::endl;
@@ -328,7 +337,7 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
             /* This is a work-around that I put in. The first guess of the density is a zero matrix and this is not good. Unfortunately, DIIS
                rarely corrects this so I find that it helps to clear the Fock and Error matrices after a few iterations and we have a more reasonable
                guess of the coefficient, and thus density, matrices. Then DIIS converges to a reasonable solution. */
-            if(Count == 5)
+            if(Count == 10)
             {
                 AllFockMatrices.clear();
                 AllErrorMatrices.clear();
@@ -343,7 +352,7 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
                 AllFockMatrices.clear();
                 AllErrorMatrices.clear();
                 // NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
-                // GenerateRandomDensity(DensityMatrix);
+                GenerateRandomDensity(DensityMatrix);
                 // Count = 1;
             }
             // std::cout << "\nDIIS Error\n" << DIISError << std::endl;
@@ -374,6 +383,10 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
                {
                    ContinueSCF = false;
                }
+               else
+               {
+                   ContinueSCF = true;
+               }
             }
             else // Use DIIS, check DIIS error instead.
             {
@@ -384,12 +397,16 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
                 {
                     ContinueSCF = false;
                 }
+                else
+                {
+                    ContinueSCF = true;
+                }
             }
             std::cout << " complete with an energy of " << Energy + Input.Integrals["0 0 0 0"] << " and DIIS error of " << DIISError << std::endl;
             // Output << Count << "\t" << Energy + Input.Integrals["0 0 0 0"] << std::endl;
             Count++;
 
-            if(Count == 5)
+            if(Count == 10)
             {
                 AllFockMatrices.clear();
                 AllErrorMatrices.clear();
@@ -435,8 +452,8 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
                find a different solution. We could randomize the density matrix, but then we get 
                unphysical results. */
             if(Input.DensityOption == 0) NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
-            // DensityMatrix = Eigen::MatrixXd::Random(DensityMatrix.rows(), DensityMatrix.cols());
             if(Input.DensityOption == 1) GenerateRandomDensity(DensityMatrix);
+            if(Input.DensityOption == 2) DensityMatrix = Eigen::MatrixXd::Random(DensityMatrix.rows(), DensityMatrix.cols());
         }
     }
 
