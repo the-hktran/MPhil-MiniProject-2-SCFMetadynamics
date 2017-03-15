@@ -254,6 +254,11 @@ int main(int argc, char* argv[])
     {
         DensityMatrix(i, i) = 1;
     }
+    if(Input.OverlapInput == "c")
+    {
+        DensityMatrix = Input.InitialCoeff * Input.InitialCoeff.transpose();
+        std::cout << Input.InitialCoeff << std::endl;
+    }
     
     Eigen::MatrixXd HCore(Input.NumAO, Input.NumAO);
     Eigen::MatrixXd ZeroMatrix = Eigen::MatrixXd::Zero(Input.NumAO, Input.NumAO);
@@ -280,7 +285,7 @@ int main(int argc, char* argv[])
     for(int i = 0; i < Input.NumSoln; i++)
     {
         std::tuple< Eigen::MatrixXd, double, double > tmpTuple;
-        NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals); // CoeffMatrix is zero so this doesn't do anything the  first time.
+        // NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals); // CoeffMatrix is zero so this doesn't do anything the  first time.
         Energy = SCF(Bias, i + 1, DensityMatrix, Input, Output, SOrtho, HCore, AllEnergies, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
         // tmpTuple = std::make_tuple(DensityMatrix, 0.1, 10); // H4
         tmpTuple = std::make_tuple(DensityMatrix, 0.1, 1);

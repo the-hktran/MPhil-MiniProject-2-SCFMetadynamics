@@ -110,6 +110,21 @@ void InputObj::Set()
     // Read the overlap input here. Since Q-Chem uses a MO basis, we just set the overlap to be the identity. I should fix this when
     // I use something other than Q-Chem, but then I would have to change the integrals too, so...
 
+    if(OverlapInput == "c") 
+    {
+        std::ifstream C("c");
+        InitialCoeff = Eigen::MatrixXd::Zero(NumAO, NumOcc);
+        for(int j = 0; j < NumOcc; j++)
+        {
+            for(int i = 0; i < NumAO; i++)
+            {
+                double tmpDouble;
+                C >> tmpDouble;
+                InitialCoeff(i, j) = tmpDouble;
+            }
+        }
+    }
+
     if(DensityOption != 1 && DensityOption != 0 && DensityOption != 2)
     {
         std::cerr << "Something is wrong in the input file." << std::endl;

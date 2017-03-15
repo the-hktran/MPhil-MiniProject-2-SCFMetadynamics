@@ -332,11 +332,11 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
                 }
             }
             std::cout << " complete with a biased energy of " << Energy + Input.Integrals["0 0 0 0"];
-            if(Input.Options[1] == 1)
+            if(Input.Options[0])
             {
                 std::cout << " and DIIS error of " << DIISError << std::endl;
             }
-            if(Input.Options[1] == 0)
+            else
             {
                 std::cout << " and Density RMS of " << DensityRMS << std::endl;
             }
@@ -346,7 +346,7 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
             /* This is a work-around that I put in. The first guess of the density is a zero matrix and this is not good. Unfortunately, DIIS
                rarely corrects this so I find that it helps to clear the Fock and Error matrices after a few iterations and we have a more reasonable
                guess of the coefficient, and thus density, matrices. Then DIIS converges to a reasonable solution. */
-            if(Count == 10)
+            if(Count == 5)
             {
                 AllFockMatrices.clear();
                 AllErrorMatrices.clear();
@@ -360,8 +360,8 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
             //     Count = 1;
                 AllFockMatrices.clear();
                 AllErrorMatrices.clear();
-                // NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
-                GenerateRandomDensity(DensityMatrix);
+                NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
+                // GenerateRandomDensity(DensityMatrix);
                 // Count = 1;
             }
             // std::cout << "\nDIIS Error\n" << DIISError << std::endl;
@@ -412,22 +412,22 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
                 }
             }
             std::cout << " complete with an energy of " << Energy + Input.Integrals["0 0 0 0"];//  << " and DIIS error of " << DIISError << std::endl;
-            if(Input.Options[1] == 1)
+            if(Input.Options[0])
             {
                 std::cout << " and DIIS error of " << DIISError << std::endl;
             }
-            if(Input.Options[1] == 0)
+            else
             {
                 std::cout << " and Density RMS of " << DensityRMS << std::endl;
             }
             // Output << Count << "\t" << Energy + Input.Integrals["0 0 0 0"] << std::endl;
             Count++;
 
-            if(Count == 10)
-            {
-                AllFockMatrices.clear();
-                AllErrorMatrices.clear();
-            }
+            // if(Count == 10)
+            // {
+            //     AllFockMatrices.clear();
+            //     AllErrorMatrices.clear();
+            // }
 
             if(Count % 200 == 0)
             {
