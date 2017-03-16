@@ -452,13 +452,25 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
         }
         else
         {
-            for(int i = 0; i < AllEnergies.size(); i++)
+            for(int i = 0; i < AllEnergies.size(); i++) // Compare energy with previous solutions.
             {
                 if(fabs(Energy + Input.Integrals["0 0 0 0"] - AllEnergies[i]) < 10E-5) // Checks to see if new energy is equal to any previous energy.
                 {
                     isUniqueSoln = false; // If it matches at one, set this flag to false so the SCF procedure can repeat for this solution.
                     WhichSoln = i;
                     break;
+                }
+            }
+            if(isUniqueSoln) // If it still looks good
+            {
+                for(int i = 0; i < Bias.size(); i++)
+                {
+                    if(CalcDensityRMS(DensityMatrix, std::get<0>(Bias[i])) < 10E-3) // Means same density matrix as found before
+                    {
+                        isUniqueSoln = false;
+                        WhichSoln = i;
+                        break;
+                    }
                 }
             }
         }
@@ -483,10 +495,6 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
 	std::cout << "SCF MetaD: Solution " << SolnNum << " has converged with energy " << Energy + Input.Integrals["0 0 0 0"] << std::endl;
 	std::cout << "SCF MetaD: This solution took " << (clock() - ClockStart) / CLOCKS_PER_SEC << " seconds." << std::endl;
 	Output << "Solution " << SolnNum << " has converged with energy " << Energy + Input.Integrals["0 0 0 0"] << std::endl;
-    for(int i = 0; i < OccupiedOrbitals.size(); i++)
-    {
-        Output << OccupiedOrbitals[i] << "\t";
-    }
 	Output << "This solution took " << (clock() - ClockStart) / CLOCKS_PER_SEC << " seconds." << std::endl;
 
     return Energy + Input.Integrals["0 0 0 0"];

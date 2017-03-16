@@ -203,14 +203,18 @@ int main(int argc, char* argv[])
                 std::tuple< Eigen::MatrixXd, double, double > tmpTuple;
                 NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals); // CoeffMatrix is zero so this doesn't do anything the  first time.
                 Energy = SCF(Bias, i + 1, DensityMatrix, IterationInput, IterationOutput, SOrtho, HCore, AllEnergies, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals, SCFCount, IterationInput.MaxSCF);
-                if(SCFCount >= IterationInput.MaxSCF) break;
+                if(SCFCount >= Input.MaxSCF) 
+                {
+                    std::cout << "SCF MetaD: Maximum number of SCF iterations reached." << std::endl;
+                    break;
+                }
                 tmpTuple = std::make_tuple(DensityMatrix, 0.1, 1);
                 Bias.push_back(tmpTuple);
             }
 
             /* This ends the single point calculation. Now the output file records the information. */
             std::sort(AllEnergies.begin(), AllEnergies.end()); // Adiabatic representation!
-            TotalOutput << Input.ScanValStart + (IT - 1) * Input.ScanValStep;
+            TotalOutput << Input.ScanValStart + IT * Input.ScanValStep;
             for(int i = 0; i < AllEnergies.size(); i++)
             {
                 TotalOutput << "\t" << AllEnergies[i];
@@ -290,7 +294,11 @@ int main(int argc, char* argv[])
         std::tuple< Eigen::MatrixXd, double, double > tmpTuple;
         // NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals); // CoeffMatrix is zero so this doesn't do anything the  first time.
         Energy = SCF(Bias, i + 1, DensityMatrix, Input, Output, SOrtho, HCore, AllEnergies, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals, SCFCount, Input.MaxSCF);
-        if(SCFCount >= Input.MaxSCF) break;
+        if(SCFCount >= Input.MaxSCF) 
+        {
+            std::cout << "SCF MetaD: Maximum number of SCF iterations reached." << std::endl;
+            break;
+        }
         tmpTuple = std::make_tuple(DensityMatrix, 0.1, 1);
         Bias.push_back(tmpTuple);
     }
