@@ -11,7 +11,7 @@
 #include <stdlib.h> 
 #include <algorithm> // std::sort
 
-double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int SolnNum, Eigen::MatrixXd &DensityMatrix, InputObj &Input, std::ofstream &Output, Eigen::MatrixXd &SOrtho, Eigen::MatrixXd &HCore, std::vector< double > &AllEnergies, Eigen::MatrixXd &CoeffMatrix, std::vector<int> &OccupiedOrbitals, std::vector<int> &VirtualOrbitals);
+double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int SolnNum, Eigen::MatrixXd &DensityMatrix, InputObj &Input, std::ofstream &Output, Eigen::MatrixXd &SOrtho, Eigen::MatrixXd &HCore, std::vector< double > &AllEnergies, Eigen::MatrixXd &CoeffMatrix, std::vector<int> &OccupiedOrbitals, std::vector<int> &VirtualOrbitals, int &SCFCount, int MaxSCF);
 void BuildFockMatrix(Eigen::MatrixXd &FockMatrix, Eigen::MatrixXd &DensityMatrix, std::map<std::string, double> &Integrals, std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int NumElectrons);
 void GenerateRandomDensity(Eigen::MatrixXd &DensityMatrix);
 
@@ -197,11 +197,13 @@ int main(int argc, char* argv[])
                 }
             }
 
+            int SCFCount = 0;
             for(int i = 0; i < IterationInput.NumSoln; i++)
             {
                 std::tuple< Eigen::MatrixXd, double, double > tmpTuple;
                 NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals); // CoeffMatrix is zero so this doesn't do anything the  first time.
-                Energy = SCF(Bias, i + 1, DensityMatrix, IterationInput, IterationOutput, SOrtho, HCore, AllEnergies, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
+                Energy = SCF(Bias, i + 1, DensityMatrix, IterationInput, IterationOutput, SOrtho, HCore, AllEnergies, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals, SCFCount, IterationInput.MaxSCF);
+                if(SCFCount >= IterationInput.MaxSCF) break;
                 tmpTuple = std::make_tuple(DensityMatrix, 0.1, 1);
                 Bias.push_back(tmpTuple);
             }
@@ -282,12 +284,13 @@ int main(int argc, char* argv[])
         }
     }
 
+    int SCFCount = 0;
     for(int i = 0; i < Input.NumSoln; i++)
     {
         std::tuple< Eigen::MatrixXd, double, double > tmpTuple;
         // NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals); // CoeffMatrix is zero so this doesn't do anything the  first time.
-        Energy = SCF(Bias, i + 1, DensityMatrix, Input, Output, SOrtho, HCore, AllEnergies, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
-        // tmpTuple = std::make_tuple(DensityMatrix, 0.1, 10); // H4
+        Energy = SCF(Bias, i + 1, DensityMatrix, Input, Output, SOrtho, HCore, AllEnergies, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals, SCFCount, Input.MaxSCF);
+        if(SCFCount >= Input.MaxSCF) break;
         tmpTuple = std::make_tuple(DensityMatrix, 0.1, 1);
         Bias.push_back(tmpTuple);
     }

@@ -78,6 +78,7 @@ void InputObj::Set()
     IntegralsFile >> tmpBool1 >> tmpBool2 >> DensityOption;
     Options.push_back(tmpBool1); // Use DIIS
     Options.push_back(tmpBool2); // Use MOM
+    IntegralsFile >> MaxSCF;
 
     double tmpDouble;
     int tmpInt1, tmpInt2, tmpInt3, tmpInt4;

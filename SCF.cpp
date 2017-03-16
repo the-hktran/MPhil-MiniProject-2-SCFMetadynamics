@@ -262,7 +262,7 @@ double SCFIteration(Eigen::MatrixXd &DensityMatrix, InputObj &Input, Eigen::Matr
     return Energy;
 }
 
-double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int SolnNum, Eigen::MatrixXd &DensityMatrix, InputObj &Input, std::ofstream &Output, Eigen::MatrixXd &SOrtho, Eigen::MatrixXd &HCore, std::vector< double > &AllEnergies, Eigen::MatrixXd &CoeffMatrix, std::vector<int> &OccupiedOrbitals, std::vector<int> &VirtualOrbitals)
+double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int SolnNum, Eigen::MatrixXd &DensityMatrix, InputObj &Input, std::ofstream &Output, Eigen::MatrixXd &SOrtho, Eigen::MatrixXd &HCore, std::vector< double > &AllEnergies, Eigen::MatrixXd &CoeffMatrix, std::vector<int> &OccupiedOrbitals, std::vector<int> &VirtualOrbitals, int &SCFCount, int MaxSCF)
 {
 	double SCFTol = 10E-6; // SCF will terminate when the DIIS error is below this amount. 
 
@@ -342,6 +342,8 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
             }
             // Output << Count << "\t" << Energy + Input.Integrals["0 0 0 0"] << std::endl;
             Count++;
+            SCFCount++;
+            if(SCFCount >= MaxSCF) return 0;
 
             /* This is a work-around that I put in. The first guess of the density is a zero matrix and this is not good. Unfortunately, DIIS
                rarely corrects this so I find that it helps to clear the Fock and Error matrices after a few iterations and we have a more reasonable
@@ -422,12 +424,14 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
             }
             // Output << Count << "\t" << Energy + Input.Integrals["0 0 0 0"] << std::endl;
             Count++;
+            SCFCount++;
+            if(SCFCount >= MaxSCF) return 0;
 
-            // if(Count == 10)
-            // {
-            //     AllFockMatrices.clear();
-            //     AllErrorMatrices.clear();
-            // }
+            if(Count == 5)
+            {
+                AllFockMatrices.clear();
+                AllErrorMatrices.clear();
+            }
 
             if(Count % 200 == 0)
             {
@@ -479,6 +483,10 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
 	std::cout << "SCF MetaD: Solution " << SolnNum << " has converged with energy " << Energy + Input.Integrals["0 0 0 0"] << std::endl;
 	std::cout << "SCF MetaD: This solution took " << (clock() - ClockStart) / CLOCKS_PER_SEC << " seconds." << std::endl;
 	Output << "Solution " << SolnNum << " has converged with energy " << Energy + Input.Integrals["0 0 0 0"] << std::endl;
+    for(int i = 0; i < OccupiedOrbitals.size(); i++)
+    {
+        Output << OccupiedOrbitals[i] << "\t";
+    }
 	Output << "This solution took " << (clock() - ClockStart) / CLOCKS_PER_SEC << " seconds." << std::endl;
 
     return Energy + Input.Integrals["0 0 0 0"];

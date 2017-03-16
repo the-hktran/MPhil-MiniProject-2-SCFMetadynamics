@@ -25,5 +25,5 @@ class InputObj
         double ScanValStep;
         int DensityOption = -1; // Will return an error if not set.
         Eigen::MatrixXd InitialCoeff;
-        int MaxSCF = 1000;
+        int MaxSCF = 5000;
 };
