@@ -251,17 +251,7 @@ double SCFIteration(Eigen::MatrixXd &DensityMatrix, InputObj &Input, Eigen::Matr
     }
 
 	/* Now calculate the HF energy. E = sum_ij P_ij * (HCore_ij + F_ij) */
-    double Energy = 0; // HF energy.
-    for(int i = 0; i < FockMatrix.rows(); i++)
-    {
-        for(int j = 0; j < FockMatrix.cols(); j++)
-        {
-            Energy += (DensityMatrix(i, j) * (HCore(i, j) + FockMatrix(i, j)));
-        }
-    }
-    // std::cout << DensityMatrix << "\n\n" << HCore << "\n\n" << FockMatrix << std::endl;
-    // std::string tmpstring;
-    // std::getline(std::cin, tmpstring);
+    double Energy = (DensityMatrix.cwiseProduct(HCore + FockMatrix)).sum();
     return Energy;
 }
 
@@ -310,8 +300,8 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
             Energy = SCFIteration(DensityMatrix, Input, HCore, SOrtho, Bias, CoeffMatrix, AllFockMatrices, AllErrorMatrices, CoeffMatrixPrev, OccupiedOrbitals, VirtualOrbitals);
             if(!Input.Options[0]) // Don't use DIIS. Check matrix RMS instead.
             {
-               DensityRMS = CalcDensityRMS(DensityMatrix, DensityMatrixPrev);
-               if(fabs(DensityRMS) < SCFTol * SCFTol * (CalcMatrixRMS(DensityMatrix) + 1) && fabs(Energy - EnergyPrev) < SCFTol * (fabs(Energy) + 1))
+               DensityRMS = (DensityMatrix - DensityMatrixPrev).squaredNorm(); // CalcDensityRMS(DensityMatrix, DensityMatrixPrev);
+               if(fabs(DensityRMS) < SCFTol * SCFTol * (DensityMatrix.squaredNorm() + 1) && fabs(Energy - EnergyPrev) < SCFTol * (fabs(Energy) + 1))
                {
                    ContinueSCF = false;
                }
@@ -346,7 +336,7 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
             // Output << Count << "\t" << Energy + Input.Integrals["0 0 0 0"] << std::endl;
             Count++;
             SCFCount++;
-            if(SCFCount >= MaxSCF) return 0;
+            if(SCFCount >= MaxSCF && MaxSCF != -1) return 0;
 
             /* This is a work-around that I put in. The first guess of the density is a zero matrix and this is not good. Unfortunately, DIIS
                rarely corrects this so I find that it helps to clear the Fock and Error matrices after a few iterations and we have a more reasonable
@@ -392,8 +382,8 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
             Energy = SCFIteration(DensityMatrix, Input, HCore, SOrtho, EmptyBias, CoeffMatrix, AllFockMatrices, AllErrorMatrices, CoeffMatrixPrev, OccupiedOrbitals, VirtualOrbitals);
             if(!Input.Options[0]) // Don't use DIIS. Check matrix RMS instead.
             {
-               DensityRMS = CalcDensityRMS(DensityMatrix, DensityMatrixPrev);
-               if(fabs(DensityRMS) < SCFTol * SCFTol * (CalcMatrixRMS(DensityMatrix) + 1) && fabs(Energy - EnergyPrev) < SCFTol * (fabs(Energy) + 1))
+               DensityRMS = (DensityMatrix - DensityMatrixPrev).squaredNorm();
+               if(fabs(DensityRMS) < SCFTol * SCFTol * (DensityMatrix.squaredNorm() + 1) && fabs(Energy - EnergyPrev) < SCFTol * (fabs(Energy) + 1))
                {
                    ContinueSCF = false;
                }
@@ -404,7 +394,7 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
             }
             else // Use DIIS, check DIIS error instead.
             {
-                DIISError = CalcMatrixRMS(AllErrorMatrices[AllErrorMatrices.size() - 1]);
+                DIISError = AllErrorMatrices[AllErrorMatrices.size() - 1].squaredNorm();
                 // Eigen::MatrixXd DIISAbsMat = AllFockMatrices[AllFockMatrices.size() - 1] * DensityMatrix * Input.OverlapMatrix;
                 // DIISAbs = CalcMatrixRMS(DIISAbsMat);
                 if(fabs(DIISError) < SCFTol * SCFTol)
@@ -428,7 +418,7 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
             // Output << Count << "\t" << Energy + Input.Integrals["0 0 0 0"] << std::endl;
             Count++;
             SCFCount++;
-            if(SCFCount >= MaxSCF) return 0;
+            if(SCFCount >= MaxSCF && MaxSCF != -1) return 0;
 
             if(Count == 5)
             {
@@ -468,7 +458,7 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
             {
                 for(int i = 0; i < Bias.size(); i++)
                 {
-                    if(CalcDensityRMS(DensityMatrix, std::get<0>(Bias[i])) < 10E-3) // Means same density matrix as found before
+                    if((DensityMatrix - std::get<0>(Bias[i])).squaredNorm() < 10E-3) // Means same density matrix as found before
                     {
                         isUniqueSoln = false;
                         WhichSoln = i;

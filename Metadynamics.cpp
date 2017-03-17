@@ -202,7 +202,7 @@ int main(int argc, char* argv[])
                 std::tuple< Eigen::MatrixXd, double, double > tmpTuple;
                 NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals); // CoeffMatrix is zero so this doesn't do anything the  first time.
                 Energy = SCF(Bias, i + 1, DensityMatrix, IterationInput, IterationOutput, SOrtho, HCore, AllEnergies, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals, SCFCount, IterationInput.MaxSCF);
-                if(SCFCount >= IterationInput.MaxSCF) 
+                if(SCFCount >= IterationInput.MaxSCF && IterationInput.MaxSCF != -1) 
                 {
                     std::cout << "SCF MetaD: Maximum number of SCF iterations reached." << std::endl;
                     break;
@@ -294,7 +294,7 @@ int main(int argc, char* argv[])
         std::tuple< Eigen::MatrixXd, double, double > tmpTuple;
         // NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals); // CoeffMatrix is zero so this doesn't do anything the  first time.
         Energy = SCF(Bias, i + 1, DensityMatrix, Input, Output, SOrtho, HCore, AllEnergies, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals, SCFCount, Input.MaxSCF);
-        if(SCFCount >= Input.MaxSCF) 
+        if(SCFCount >= Input.MaxSCF && Input.MaxSCF != -1) 
         {
             std::cout << "SCF MetaD: Maximum number of SCF iterations reached." << std::endl;
             break;
