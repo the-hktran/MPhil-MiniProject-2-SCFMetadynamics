@@ -113,8 +113,6 @@ double BiasMatrixElement(int Row, int Col, std::vector< std::tuple< Eigen::Matri
 
 int main(int argc, char* argv[])
 {
-    std::vector< std::tuple< Eigen::MatrixXd, double, double > > Bias; // Tuple containing DensityMatrix, N_x, lambda_x
-
     InputObj Input;
     if(argc == 4)
     {
@@ -152,7 +150,7 @@ int main(int argc, char* argv[])
             IterationOutput << "Number of Electrons = " << IterationInput.NumElectrons << std::endl;
             IterationOutput << "Use DIIS?: " << IterationInput.Options[0] << std::endl;
             IterationOutput << "Use MOM?: " << IterationInput.Options[1] << std::endl;
-            IterationOutput << "Density choice: " << IterationInput.DensityOption << std::endl;
+            IterationOutput << "Density choice: " << IterationInput.DensityOption << "\n" << std::endl;
 
             Eigen::SelfAdjointEigenSolver< Eigen::MatrixXd > EigensystemS(IterationInput.OverlapMatrix);
             Eigen::SparseMatrix< double > LambdaSOrtho(IterationInput.NumAO, IterationInput.NumAO); // Holds the inverse sqrt matrix of eigenvalues of S ( Lambda^-1/2 )
@@ -174,7 +172,8 @@ int main(int argc, char* argv[])
             {
                 DensityMatrix(i, i) = 1;
             }
-            
+
+            std::vector< std::tuple< Eigen::MatrixXd, double, double > > Bias; // Tuple containing DensityMatrix, N_x, lambda_x
             Eigen::MatrixXd HCore(IterationInput.NumAO, IterationInput.NumAO);
             Eigen::MatrixXd ZeroMatrix = Eigen::MatrixXd::Zero(IterationInput.NumAO, IterationInput.NumAO);
             BuildFockMatrix(HCore, ZeroMatrix, IterationInput.Integrals, Bias, IterationInput.NumElectrons); // Form HCore (D is zero)
@@ -203,7 +202,7 @@ int main(int argc, char* argv[])
                 std::tuple< Eigen::MatrixXd, double, double > tmpTuple;
                 NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals); // CoeffMatrix is zero so this doesn't do anything the  first time.
                 Energy = SCF(Bias, i + 1, DensityMatrix, IterationInput, IterationOutput, SOrtho, HCore, AllEnergies, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals, SCFCount, IterationInput.MaxSCF);
-                if(SCFCount >= Input.MaxSCF) 
+                if(SCFCount >= IterationInput.MaxSCF) 
                 {
                     std::cout << "SCF MetaD: Maximum number of SCF iterations reached." << std::endl;
                     break;
@@ -220,7 +219,7 @@ int main(int argc, char* argv[])
                 TotalOutput << "\t" << AllEnergies[i];
             }
             TotalOutput << std::endl;
-        }
+        } // end iterations loop
         return 0;
     } // end scan loop
 
@@ -238,7 +237,7 @@ int main(int argc, char* argv[])
     Output << "Number of Electrons = " << Input.NumElectrons << std::endl;
     Output << "Use DIIS?: " << Input.Options[0] << std::endl;
     Output << "Use MOM?: " << Input.Options[1] << std::endl;
-    Output << "Density choice: " << Input.DensityOption << std::endl;
+    Output << "Density choice: " << Input.DensityOption << "\n" << std::endl;
 
     Eigen::SelfAdjointEigenSolver< Eigen::MatrixXd > EigensystemS(Input.OverlapMatrix);
     Eigen::SparseMatrix< double > LambdaSOrtho(Input.NumAO, Input.NumAO); // Holds the inverse sqrt matrix of eigenvalues of S ( Lambda^-1/2 )
@@ -266,6 +265,7 @@ int main(int argc, char* argv[])
         std::cout << Input.InitialCoeff << std::endl;
     }
     
+    std::vector< std::tuple< Eigen::MatrixXd, double, double > > Bias; // Tuple containing DensityMatrix, N_x, lambda_x
     Eigen::MatrixXd HCore(Input.NumAO, Input.NumAO);
     Eigen::MatrixXd ZeroMatrix = Eigen::MatrixXd::Zero(Input.NumAO, Input.NumAO);
     BuildFockMatrix(HCore, ZeroMatrix, Input.Integrals, Bias, Input.NumElectrons); // Form HCore (D is zero)

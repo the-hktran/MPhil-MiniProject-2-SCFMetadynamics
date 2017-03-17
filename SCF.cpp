@@ -259,7 +259,7 @@ double SCFIteration(Eigen::MatrixXd &DensityMatrix, InputObj &Input, Eigen::Matr
             Energy += (DensityMatrix(i, j) * (HCore(i, j) + FockMatrix(i, j)));
         }
     }
-    std::cout << DensityMatrix << "\n\n" << HCore << "\n\n" << FockMatrix << std::endl;
+    // std::cout << DensityMatrix << "\n\n" << HCore << "\n\n" << FockMatrix << std::endl;
     // std::string tmpstring;
     // std::getline(std::cin, tmpstring);
     return Energy;

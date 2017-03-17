@@ -146,17 +146,17 @@ Tom Brady is the G.O.A.T.
 \section{Introduction} \label{sec:intro}
 Modern electronic structure theory is concerned with solving the electronic Hamiltonian to obtain the electronic energy eigenvalues. Practical, numerical methods are based upon solutions of Hartree-Fock (HF) theory\cite{hartree,fock,slater} and density functional theory (DFT).\cite{dft1,dft1} These solutions are obtained using the self-consistent field (SCF) method.\cite{hartree,szabo,scf} SCF solves the equations of HF and DFT by forming an initial guess for the solution. The equations are then solved using this initial guess to obtain a different guess of the solution. This is done through many iterations, until the solutions are converged and the stationary points of the HF and DFT equations are found. Many methods exists in order to accelerate the convergence rate.\cite{diis}
 
-Although the SCF method is of critical importance to electronic structure theory, little is known about the solutions to the SCF equations. These equations are non-linear, so their solution space is difficult to study mathematically. The number of solutions for a given system is unknown and these solutions lack nice properties such as orthogonality. Fukutome has placed an upper and lower bounds on the number of solutions, which increases exponentially with the system size. Moreover, the SCF method is guided by the variational theorem, which states that any proposed solution will give an energy expectation that is higher than the true ground state energy eigenvalue of the electronic Hamiltonian. However, as with many optimization problems, there is no guarantee that a minimum found using the SCF method is truly the global minimum rather than a local minimum. One cannot truly know the answer to this without locating every solution. This becomes a problem for systems with many low-lying electronic states close in energy where the SCF method may have highly unstable convergence with respect to initial conditions.
+Although the SCF method is of critical importance to electronic structure theory, little is known about the solutions to the SCF equations. These equations are non-linear, so their solution space is difficult to study mathematically. The number of solutions for a given system is unknown and these solutions lack nice properties such as orthogonality.\cite{scfmd} Fukutome has placed an upper and lower bounds on the number of solutions, which increases exponentially with the system size.\cite{fukutome-1971} Moreover, the SCF method is guided by the variational theorem, which states that any proposed solution will give an energy expectation that is higher than the true ground state energy eigenvalue of the electronic Hamiltonian. However, as with many optimization problems, there is no guarantee that a minimum found using the SCF method is truly the global minimum rather than a local minimum. One cannot truly know the answer to this without locating every solution. This becomes a problem for systems with many low-lying electronic states close in energy where the SCF method may have highly unstable convergence with respect to initial conditions.
 
-Similar challenges exist in molecular dynamics. To overcome these challenges, techniques are developed that allow the simulation to explore more of the potential energy surface. Some of these techniques, such as simulated annealing, have been applied to the SCF method in order to obtain multiple SCF solutions. %In this paper, a method based on metadynamics will be discussed and applied to the SCF method so that multiple SCF solutions can be obtained.
+Similar challenges exist in molecular dynamics. To overcome these challenges, techniques are developed that allow the simulation to explore more of the potential energy surface. Some of these techniques, such as simulated annealing, have been applied to the SCF method in order to obtain multiple SCF solutions.\cite{malbouisson-2005} In this paper, a method based on metadynamics\cite{parrinello-2002} will be discussed and applied\cite{scfmd} to the SCF method so that multiple SCF solutions can be obtained.
 
-Furthermore, much work has been done in attempting to relate the multiple SCF solutions to true excited states of molecular systems. Although quantum chemical methods for the ground states of molecular systems are well-developed, much difficulty lies in extracting information about the excited states. This is particularly important for understanding key chemical processes in areas such as energy storage,\cite{es-ex1,es-ex2} fluorescent chemical detection,\cite{es-ex3} or photovoltaic materials.\cite{es-ex4,es-ex5}
+Much work has been done in finding the utility of multiple SCF solutions. There are attempts to relate higher-lying SCF solutions to true excited states of molecular systems. Although quantum chemical methods for the ground states of molecular systems are well-developed, much difficulty lies in extracting information about the excited states. This is particularly important for understanding key chemical processes in areas such as energy storage,\cite{es-ex1,es-ex2} fluorescent chemical detection,\cite{es-ex3} or photovoltaic materials.\cite{es-ex4,es-ex5}
 
-Methods that exist and allow for determination of excited properties such as multireference methods\cite{shavitt} or the equation-of-motion formulation\cite{eomcc} have high computational scaling. Ideally, one can approach excited states with sufficient accuracy using a method that scales with system size similar to SCF methods. The difficulty lies in the fact that excited electronic states lack a variational theorem in a form as simple as the ground state variational theorem. A variant of this theorem for excited states has been formulated that involves the square of the Hamiltonian.\cite{messmer-1969,brett-1972,murakhtanov-1982} Unfortunately, computations of the squared Hamiltonian is significantly more costly. Recent work has been done in optimizing a similar functional using Monte Carlo methods.\cite{zhao-2016-1,zhao-2016-2}
+Methods that allow for determination of excited properties such as multireference methods\cite{shavitt} or the equation-of-motion formulation\cite{eomcc} have high computational scaling. Ideally, one can approach excited states with sufficient accuracy using a method that scales with system size similar to SCF methods. The difficulty lies in the fact that excited electronic states lack a variational theorem in a form as simple as the ground state variational theorem. A variant of this theorem for excited states has been formulated that involves the square of the Hamiltonian.\cite{messmer-1969,brett-1972,murakhtanov-1982} Unfortunately, computations of the squared Hamiltonian is significantly more costly. Recent work has been done in optimizing a similar functional using Monte Carlo methods.\cite{zhao-2016-1,zhao-2016-2}
 
 Alternative methods have been developed to achieve SCF solutions that physically resemble excited states, but can be computed at the cost of ground state SCF. A method called Delta SCF ($\Delta$SCF) attempts to solve essentially a ground state SCF problem, but by modifying occupational numbers to converge to excited state solutions.\cite{gunnarsson-1977,gavnholt-2008} In aid of these goals, the maximum overlap method (MOM) is a method developed for SCF algorithms where the occupational numbers are chosen to closely resemble the occupational numbers of the previous iteration's solution.\cite{mom} This method prevents the SCF procedure from falling back into the lowest solution, and has shown qualitative success in describing excited electronic states. In a similar vein, constrained-DFT (CDFT) is a variant of SCF based DFT methods where the charge density is constrained to physically intuitive densities.\cite{cdft} This allows for more meaningful excited states to be derived from SCF solutions to DFT, but requires prior knowledge or intuition of the system and has not been effective in describing neutral valance excitations.
 
-Beyond simply using SCF solutions as excited state approximates, SCF solutions are also desired because they are size-extensive. One of the shortcomings of truncated CI methods\cite{shavitt} is that the configurations used in truncated CI expansions are not size-extensive, and hence neither is the CI solution. However, a CI expansion using SCF solutions will be retain the size-extensive property of the SCF solutions. The development of a CI theory short of FCI that remains size-extensive has been studied using the multiple SCF solutions and further work has been done to understand the disappearance of these solutions in order to allow for a robust, size-extensive CI method.
+Beyond simply using SCF solutions as excited state approximates, SCF solutions are also desired because they are size-extensive. One of the shortcomings of truncated CI methods\cite{shavitt} is that the configurations used in truncated CI expansions are not size-extensive, and hence neither is the CI solution. However, a CI expansion using SCF solutions will be retain the size-extensive property of the SCF solutions. The development of a CI theory short of FCI that remains size-extensive has been studied using the multiple SCF solutions\cite{thom-2009} and further work has been done to understand the disappearance of these solutions in order to allow for a robust, size-extensive CI method.\cite{thom-2014,thom-2016}
 
 \section{Background}
 \subsection{Electronic Problem} \label{sec:elproblem}
@@ -278,32 +278,32 @@ The energy for a given solution is
 \begin{equation} \label{eq:hfenergy}
 E_e = \sum_{\mu\nu}^{\frac{m}{2}} P_{\mu\nu} \left[ \bra{\chi_\mu} \hat h \ket{\chi_\nu} + F_{\mu\nu} \right]
 \end{equation}
-The general Hartree-Fock algorithm is summarized in Algorithm \ref{alg:hf}.
+%The general Hartree-Fock algorithm is summarized in Algorithm \ref{alg:hf}.
 
-\begin{algorithm}
- Choose guess density matrix $P$\;
- 
- Initialize $E_e$, $E_e^{old}$, and $P^{old}$\;
- 
- \While{$P$ and $E$ are not converged}{
- $E_e^{old} \leftarrow E_e$\;
- $P^{old} \leftarrow P$\; 
- 
- Form the Fock matrix, $F$, using $P$ from Equation \eqref{eq:fockmatspace}\;
- 
- Obtain $C$ from $F$ by solving Equation \eqref{eq:fock}\;
- 
- Calculate $P$ from $C$ using Equation \eqref{eq:density}\;
- 
- Calculate $E_e$ using $P$ and $F$ using Equation \eqref{eq:hfenergy}\;
- 
- Check for convergence. One way is to compare $E_e$ and $E_e^{old}$ and the same with $P$ and $P^{old}$. A better way is to use the DIIS method to be discussed in Section \ref{sec:diis}\;}
-
- Return $E_e$ as the electronic energy\;
-
-\caption{The SCF procedure to solve the HF equations.} 
-\label{alg:hf}
-\end{algorithm}
+%\begin{algorithm}
+% Choose guess density matrix $P$\;
+% 
+% Initialize $E_e$, $E_e^{old}$, and $P^{old}$\;
+% 
+% \While{$P$ and $E$ are not converged}{
+% $E_e^{old} \leftarrow E_e$\;
+% $P^{old} \leftarrow P$\; 
+% 
+% Form the Fock matrix, $F$, using $P$ from Equation \eqref{eq:fockmatspace}\;
+% 
+% Obtain $C$ from $F$ by solving Equation \eqref{eq:fock}\;
+% 
+% Calculate $P$ from $C$ using Equation \eqref{eq:density}\;
+% 
+% Calculate $E_e$ using $P$ and $F$ using Equation \eqref{eq:hfenergy}\;
+% 
+% Check for convergence. One way is to compare $E_e$ and $E_e^{old}$ and the same with $P$ and $P^{old}$. A better way is to use the DIIS method to be discussed in Section \ref{sec:diis}\;}
+%
+% Return $E_e$ as the electronic energy\;
+%
+%\caption{The SCF procedure to solve the HF equations.} 
+%\label{alg:hf}
+%\end{algorithm}
 
 \subsection{DIIS} \label{sec:diis}
 The direct inversion in the iterative subspace (DIIS) method, also known as Pulay mixing, is an extrapolation technique that accelerates the convergence of the SCF method to solve the HF equations.\cite{diis} Define the error matrix for the $i$\ssth\ iteration as
@@ -429,7 +429,7 @@ The molecular orbitals $j$ with the largest value of $p_j$ are chosen to be the 
 
 \section{SCF Metadynamics} \label{sec:scfmd}
 
-Metadynamics is a method used in molecular dynamics simulations to bias the convergence of the simulation to a different minimum.\cite{metadynamics} When a dynamical simulation has converged, a biasing potential in the form of a Gaussian is added to the total energy, centered at the converged geometry. When the simulation is ran again, the simulation will converge to a different minimum allowing for a more complete search of the potential energy surface.
+Metadynamics is a method used in molecular dynamics simulations to bias the convergence of the simulation to a different minimum.\cite{parrinello-2002} When a dynamical simulation has converged, a biasing potential in the form of a Gaussian is added to the total energy, centered at the converged geometry. When the simulation is ran again, the simulation will converge to a different minimum allowing for a more complete search of the potential energy surface.
 
 A modification will be made to the SCF equations in Section \ref{sec:hf} that achieves the same effect as metadynamics, when considering SCF convergence. The energy of each SCF solution is described by Equation \eqref{eq:hfenergy} and its Fock matrix is given by Equation \eqref{eq:fockmatspace}. It is important to note that each solution is uniquely described by its density matrix, defined in Equation \eqref{eq:density}. For the rest of the paper, $^xP$, $^wP$, $\ldots$ will denote the density matrices of different solutions. It remains to find a metric between the density matrices of two different solutions. 
 
@@ -558,9 +558,9 @@ A convergence criterion must also be set. There are two choices, which will be r
 \subsection{Computational Details} \label{sec:compdetails}
 In this study, the SCF Metadynamics procedure was implemented and used calculate the electronic energies of H$_4$ and N$_2$. The Eigen library\cite{eigen} was used to conduct all matrix operations and matrix diagonalizations. All integrals were calculated using Q-Chem 4.4.\cite{qchem}
 
-For H$_4$, a nonstandard, minimal basis was used.\cite{h4basis} The geometry of H$_4$ was fixed to the planar geometry pictured in Figure \ref{fig:h4geo}. 13 SCF solutions were found. Three different sets of options discussed in Section \ref{sec:scfmdalg} were used to obtain all solutions and these will be described in Section \ref{sec:resultsh4}.
+For H$_4$, a nonstandard, minimal basis was used.\cite{h4basis} The geometry of H$_4$ was fixed to the planar geometry pictured in Figure \ref{fig:h4geo}. 13 SCF solutions were found. Three different sets of options discussed in Section \ref{sec:scfmdalg} were used to obtain all solutions and these will be described in Section \ref{sec:h4results}.
 
-The dissociation curve for N$_2$ was calculated from $r = 0.75$\AA\ to $r = 3.20$\AA\ in step sizes of $0.05$\AA. The basis set used for the calculation was cc-pVDZ\cite{dunning}. All SCF solutions below -108 $E_h$ were included. The initial $N_x^0$ and $\lambda_x^0$ for each solution were 0.1 and 1 respectively. The scaling factors were set to $s_N = s_\lambda = 1.1$. Within each SCF loop, if the SCF procedure did not converge, Option C was chosen to change the density matrix (do nothing) and after the final energy is obtained, Option A (orbital rotation) was used to choose a new density matrix. DM convergence criterion was used to test for convergence and MOM was not used in either SCF loops.
+The dissociation curve for N$_2$ was calculated from $r = 0.75$ \AA\ to $r = 3.20$ \AA\ in step sizes of $0.05$ \AA. The basis set used for the calculation was cc-pVDZ\cite{dunning}. All SCF solutions below -108 $E_h$ were included. The initial $N_x^0$ and $\lambda_x^0$ for each solution were 0.1 and 1 respectively. The scaling factors were set to $s_N = s_\lambda = 1.1$. Within each SCF loop, if the SCF procedure did not converge, Option C was chosen to change the density matrix (do nothing) and after the final energy is obtained, Option A (orbital rotation) was used to choose a new density matrix. DM convergence criterion was used to test for convergence and MOM was not used in either SCF loops.
 
 \begin{figure}
 \centering
@@ -601,7 +601,7 @@ Similar to the original publication on SCF metadynamics,\cite{scfmd} this study 
 
 As these solutions are sensitive to the various SCF metadynamics parameters, and the original publication did not specify these parameters, the solutions here are obtained from two different set of parameters. The details of these parameters are listed under Table \ref{tab:h4results}. However, one of the solutions, Solution 10, could not be found using the SCF metadynamics method, most likely due to its proximity to Solution 9. Instead, an SCF calculation using the same program was ran starting from the correct density matrix given in the original publication. From the correct density matrix, the calculation converged the same Solution 10 in the paper. This confirms that the solution is a stationary point in the HF equations. This issue also serves as a cautionary warning. It is impossible to fully explore the space of density matrices and it is difficult to find nearly degenerate solutions. 
 
-A stability analysis done previously concluded that only Solutions 1 and 2 are minimum, with the rest as maximums or saddle-points. An FCI calculation done in Q-Chem\cite{qchem} using the same basis finds the following as the energies (in $E_h$) of the lowest five electronic states: -1.9806, -1.8685, -1.8292, -1.4240, -1.4156. Although Solutions 1 and 2 are near true energies, the SCF results are not within chemical accuracy. Furthermore, the FCI solutions at -1.4240 and -1.4156 seem to be completely absent in the SCF solutions. It is concluded that SCF solutions themselves do not accurately represent excited states, and further extensions are required.
+A stability analysis done previously concluded that only Solutions 1 and 2 are minimum, with the rest as maximums or saddle-points. An FCI calculation done in Q-Chem\cite{qchem} using the same basis finds the following as the energies (in $E_h$) of the lowest five electronic states: -1.9806, -1.8685, -1.8292, -1.4240, -1.4156. Although Solutions 1 and 2 are near true energies, the SCF results are not within chemical accuracy. Furthermore, the FCI solutions at -1.4240 and -1.4156 seem to be completely absent in the SCF solutions. It is believed that SCF solutions themselves do not accurately represent excited states, and further extensions are required.
 
 \section{Conclusions and Outlook}
 \label{sect:Concl}
