@@ -466,7 +466,7 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
             {
                 std::cout << " and Density RMS of " << DensityRMS << std::endl;
             }
-            // Output << Count << "\t" << Energy + Input.Integrals["0 0 0 0"] << std::endl;
+            // Output << Count << "\t" << Energy + Input.Integrals["0 0 0 0"] << std::endl; // I planned to list the energy of each iteration, but there is a ridiculous amount of iterations.
             Count++;
             SCFCount++;
             if(SCFCount >= MaxSCF && MaxSCF != -1) return 0;
@@ -489,8 +489,8 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
                 AllFockMatrices.clear();
                 AllErrorMatrices.clear();
                 // NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
-                // GenerateRandomDensity(DensityMatrix);
-                DensityMatrix = Eigen::MatrixXd::Random(DensityMatrix.rows(), DensityMatrix.cols());
+                GenerateRandomDensity(DensityMatrix);
+                // DensityMatrix = Eigen::MatrixXd::Random(DensityMatrix.rows(), DensityMatrix.cols());
                 // Count = 1;
             }
             // std::cout << "\nDIIS Error\n" << DIISError << std::endl;
@@ -566,7 +566,7 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
                 AllErrorMatrices.clear();
                 // NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
                 // GenerateRandomDensity(DensityMatrix);
-                DensityMatrix = Eigen::MatrixXd::Random(DensityMatrix.rows(), DensityMatrix.cols());
+                // DensityMatrix = Eigen::MatrixXd::Random(DensityMatrix.rows(), DensityMatrix.cols());
             }
             // std::cout << "\nDIIS Error\n" << DIISError << std::endl;
             // std::string pause;

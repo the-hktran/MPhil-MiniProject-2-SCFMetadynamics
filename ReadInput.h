@@ -26,4 +26,6 @@ class InputObj
         int DensityOption = -1; // Will return an error if not set.
         Eigen::MatrixXd InitialCoeff;
         int MaxSCF = 5000;
+        double StartNorm = 0.1;
+        double StartLambda = 1;
 };

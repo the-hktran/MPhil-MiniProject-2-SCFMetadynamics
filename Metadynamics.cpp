@@ -348,14 +348,17 @@ int main(int argc, char* argv[])
     for(int i = 0; i < Input.NumSoln; i++)
     {
         std::tuple< Eigen::MatrixXd, double, double > tmpTuple;
-        // NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals); // CoeffMatrix is zero so this doesn't do anything the  first time.
+        if(Input.StartLambda == 10) // This gets solution 9. No good reason, just random.
+        {
+            NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals); // CoeffMatrix is zero so this doesn't do anything the  first time.
+        }
         Energy = SCF(Bias, i + 1, DensityMatrix, Input, Output, SOrtho, HCore, AllEnergies, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals, SCFCount, Input.MaxSCF);
         if(SCFCount >= Input.MaxSCF && Input.MaxSCF != -1) // Means we have exceeded maximum SCF iterations, and we didn't ask to do it indefinately.
         {
             std::cout << "SCF MetaD: Maximum number of SCF iterations reached." << std::endl;
             break;
         }
-        tmpTuple = std::make_tuple(DensityMatrix, 0.1, 1); // Add a new bias for the new solution. Starting N_x and lambda_x are here.
+        tmpTuple = std::make_tuple(DensityMatrix, Input.StartNorm, Input.StartLambda); // Add a new bias for the new solution. Starting N_x and lambda_x are here.
         Bias.push_back(tmpTuple);
     }
 

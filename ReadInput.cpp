@@ -58,12 +58,16 @@ void InputObj::SetNames(std::string Int, std::string Overlap, std::string Out)
             Use MOM? (1 / 0)
             How to step through density matrix space (2 / 1 / 0) = (Complete Random / Random Normalized by Trace / Rotation)
             Maximum number of SCF iterations. Use -1 for infinite.
+            Starting N_x
+            Starting lambda_x
    As an example, here is the first few lines of an input file for H2, in a space of four orbitals with 
    two electrons and we looking for 10 solutions. We want to use DIIS and MOM and we will choose a new density
-   by rotating an occupied and unoccupied orbital. We proceed for at most 10000 SCF iterations.
+   by rotating an occupied and unoccupied orbital. We proceed for at most 10000 SCF iterations. The starting norm is 0.1
+   and the starting lambda is 1.
             4 2 10
             1 1 0
             10000
+            0.1 1
                 0.64985185942031   1   1   1   1
                 0.16712550470738   1   3   1   1
                 0.080102886434995  1   2   1   2
@@ -80,7 +84,7 @@ void InputObj::Set()
     IntegralsFile >> tmpBool1 >> tmpBool2 >> DensityOption;
     Options.push_back(tmpBool1); // Use DIIS
     Options.push_back(tmpBool2); // Use MOM
-    IntegralsFile >> MaxSCF;
+    IntegralsFile >> MaxSCF >> StartNorm >> StartLambda;
 
     double tmpDouble;
     int tmpInt1, tmpInt2, tmpInt3, tmpInt4;
