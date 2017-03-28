@@ -17,6 +17,16 @@ double Metric(int NumElectrons, Eigen::MatrixXd &FirstDensityMatrix, Eigen::Matr
 void ModifyBias(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, short int WhichSoln);
 void NewDensityMatrix(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &CoeffMatrix, std::vector<int> OccupiedOrbitals, std::vector<int> VirtualOrbitals);
 
+/// <summary>
+/// This generates a positive, random density matrix and then divides by the norm. I know that
+/// the actual density matrix should have a trace of NumElectrons, and not 1, but this works 
+/// well enough for now. Note that this is not symmetric. This is because whenever I use the 
+/// density matrix, I only call the upper triangle, so it doesn't have to be symmetric here, 
+/// it will be as if it were symmetric in calculations.
+/// </summary>
+/// <param name="DensityMatrix">
+/// Density matrix to be randomized. The new density matrix is stored here.
+/// </param>
 void GenerateRandomDensity(Eigen::MatrixXd &DensityMatrix)
 {
     for(int i = 0; i < DensityMatrix.rows(); i++)
@@ -28,6 +38,17 @@ void GenerateRandomDensity(Eigen::MatrixXd &DensityMatrix)
     }
     DensityMatrix / DensityMatrix.trace();
 }
+
+/// <summary>
+/// Sum of element wise product of two matrices. I think Eigen has an implementation for this, so I should
+/// try to remove this function.
+/// </summary>
+/// <param name="FirstMatrix">
+/// First matrix in the dot product.
+/// </param>
+/// <param name="SecondMatrix">
+/// Second matrix in the dot product.
+/// </param>
 double MatrixDot(Eigen::MatrixXd FirstMatrix, Eigen::MatrixXd SecondMatrix)
 {
     double Dot = 0;
@@ -41,6 +62,18 @@ double MatrixDot(Eigen::MatrixXd FirstMatrix, Eigen::MatrixXd SecondMatrix)
     return Dot;
 }
 
+/// <summary>
+/// Forms the DIIS Fock matrix and puts it into FockMatrix.
+/// </summary>
+/// <param name="FockMatrix">
+/// Will hold F', the modified Fock matrix.
+/// </param>
+/// <param name="AllFockMatrices">
+/// Vector of all previous Fock matrices to be used in the sum that gives F'
+/// </param>
+/// <param name="AllErrorMatrices">
+/// Vector of error matrices, to be used to form the linear system.
+/// </param>
 void DIIS(Eigen::MatrixXd &FockMatrix, std::vector< Eigen::MatrixXd > &AllFockMatrices, std::vector< Eigen::MatrixXd > &AllErrorMatrices)
 {
     Eigen::MatrixXd B(AllErrorMatrices.size() + 1, AllErrorMatrices.size() + 1); // This is the linear system we solve for the coefficients.
@@ -73,6 +106,34 @@ void DIIS(Eigen::MatrixXd &FockMatrix, std::vector< Eigen::MatrixXd > &AllFockMa
     }
 }
 
+/// <summary>
+/// Does MOM to determine the orbitals with maximum overlap, and sets these as the
+/// occupied orbitals.
+/// </summary>
+/// <param name="DensityMatrix">
+/// Density matrix of the current iteration.
+/// </param>
+/// <param name="CoeffMatrix">
+/// Coefficient matrix of the current iteration. Used to calculate O.
+/// </param>
+/// <param name="CoeffMatrixPrev">
+/// Coefficient matrix of the previous iteration. Used to calculate O.
+/// </param>
+/// <param name="OverlapMatrix">
+/// Overlap matrix, S. Used to calculate O.
+/// </param>
+/// <param name="NumOcc">
+/// Number of occupied orbitals. Will store new occupied orbitals.
+/// </param>
+/// <param name="NumAO">
+/// The total size of the basis. Used to scan over list of orbitals and determine which ones are virtual.
+/// </param>
+/// <param name="OccupiedOrbitals">
+/// Stores the occupied orbitals.
+/// </param>
+/// <param name="VirtualOrbitals">
+/// Stores the virtual orbitals.
+/// </param>
 void MaximumOverlapMethod(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &CoeffMatrix, Eigen::MatrixXd &CoeffMatrixPrev, Eigen::MatrixXd &OverlapMatrix, int NumOcc, int NumAO, std::vector<int> &OccupiedOrbitals, std::vector<int> &VirtualOrbitals) // MoM 
 {
     /* This holds the set of total summed overlaps described below. It is a queue because this is an efficient way to choose largest elements in a set, at
@@ -144,6 +205,16 @@ void MaximumOverlapMethod(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &Coeff
     // }
 }
 
+/// <summary>
+/// Calculates the squared norm of two matrices. Used to check if density matrix is converged.
+/// Eigen has an implementation for this, so I should remove this.
+/// </summary>
+/// <param name="DensityMatrix">
+/// Density matrix of the current iteration.
+/// </param>
+/// <param name="DensitymatrixPrev">
+/// Density matrix of the previous iteration.
+/// </param>
 double CalcDensityRMS(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &DensityMatrixPrev)
 {
     double DensityRMS = 0;
@@ -179,18 +250,35 @@ double CalcMatrixRMS(Eigen::MatrixXd &Matrix)
 /// <param name="DensityMatrix">
 /// Density matrix of the current iteration.
 /// </param>
-/// <param name="Integrals">
-/// Map to value of two electron integrals.
+/// <param name="Input">
+/// Object containing all input parameters. Includes options, integrals, and number of electrons/orbitals.
 /// </param>
 /// <param name="HCore">
 /// Fock matrix generate from a zero density matrix. Stored because it can be reused for the generation of a new fock
 /// matrix and of the energy.
 /// </param>
-/// <param name="SOrtho">
-/// S^(-1/2), the symmetric orthogonalization matrix
+/// <param name="Bias">
+/// List of all biases. Used when for SCF metadynamics, but just does SCF regularly when this is empty.
 /// </param>
-/// <param name="NumOcc">
-/// Number of occupied orbitals. Used to calculate the density matrix.
+/// <param name="CoeffMatrix">
+/// Stores the current density matrix to be used to calculate new density matrix. This needs to be stored because
+/// it is also used for MOM.
+/// </param>
+/// <param name="AllFockMatrices">
+/// Stores all previous fock matrices and is used for DIIS.
+/// </param>
+/// <param name="AllErrorMatrices">
+/// Stores all previous error matrices and is used for DIIS.
+/// </param>
+/// <param name="CoeffMatrixPrev">
+/// Coefficient matrix of the previous iteration. Used for MOM.
+/// </param>
+/// <param name="OccupiedOrbitals">
+/// Holds occupied orbitals. If this is the first SCF loop, it is modified in MOM. If 
+/// this is the second SCF loop, it is fixed and just used to calculate the density matrix.
+/// </param>
+/// <param name="VirtualOrbitals">
+/// Holds virtual orbitals. I don't remember why I need this information...
 /// </param>
 double SCFIteration(Eigen::MatrixXd &DensityMatrix, InputObj &Input, Eigen::MatrixXd &HCore, Eigen::MatrixXd &SOrtho, std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, Eigen::MatrixXd &CoeffMatrix, std::vector< Eigen::MatrixXd > &AllFockMatrices, std::vector< Eigen::MatrixXd > &AllErrorMatrices, Eigen::MatrixXd &CoeffMatrixPrev, std::vector<int> &OccupiedOrbitals, std::vector<int> &VirtualOrbitals)
 {
@@ -255,6 +343,51 @@ double SCFIteration(Eigen::MatrixXd &DensityMatrix, InputObj &Input, Eigen::Matr
     return Energy;
 }
 
+/// <summary>
+/// Runs the SCF method until convergence.
+/// </summary>
+/// <param name="Bias">
+/// List of all biases. Used when for SCF metadynamics in the first SCF loop.
+/// </param>
+/// <param name="SolnNum">
+/// The number solution we are looking for. Just helps with organizing the output.
+/// </param>
+/// <param name="DensityMatrix">
+/// Stores density matrix. Will be needed after convergence to add to list of biases.
+/// </param>
+/// <param name="Input">
+/// Object containing all input parameters. Includes options, integrals, and number of electrons/orbitals.
+/// </param>
+/// <param name="Output">
+/// Output stream that we write to.
+/// </param>
+/// <param name="SOrtho">
+/// S^(-1/2). Used to put everything in an orthogonal basis.
+/// </param>
+/// <param name="HCore">
+/// Fock matrix generate from a zero density matrix. Stored because it can be reused for the generation of a new fock
+/// matrix and of the energy.
+/// </param>
+/// <param name="AllEnergies">
+/// Vector of all previous energies. Used to determine if solution is unique.
+/// </param>
+/// <param name="CoeffMatrix">
+/// Stores the current density matrix to be used to calculate new density matrix. This needs to be stored because
+/// it is used for generating the new density matrix. I don't think I need to pass it as an argument though...
+/// </param>
+/// <param name="OccupiedOrbitals">
+/// List of all occupied orbitals. This is modifed if MOM is used, but we need it to be fixed and used to calculated
+/// the density matrix when MOM is not used.
+/// </param>
+/// <param name="VirtualOrbitals">
+/// List of all virtual orbitals.
+/// </param>
+/// <param name="SCFCount">
+/// Counts how many SCF iterations have been performed. This is carried through all SCF loops in the program.
+/// </param>
+/// <param name="MaxSCF">
+/// Search is terminated when SCFCount exceeds this.
+/// </param>
 double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int SolnNum, Eigen::MatrixXd &DensityMatrix, InputObj &Input, std::ofstream &Output, Eigen::MatrixXd &SOrtho, Eigen::MatrixXd &HCore, std::vector< double > &AllEnergies, Eigen::MatrixXd &CoeffMatrix, std::vector<int> &OccupiedOrbitals, std::vector<int> &VirtualOrbitals, int &SCFCount, int MaxSCF)
 {
 	double SCFTol = 10E-6; // SCF will terminate when the DIIS error is below this amount. 
@@ -355,8 +488,9 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
             //     Count = 1;
                 AllFockMatrices.clear();
                 AllErrorMatrices.clear();
-                NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
+                // NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
                 // GenerateRandomDensity(DensityMatrix);
+                DensityMatrix = Eigen::MatrixXd::Random(DensityMatrix.rows(), DensityMatrix.cols());
                 // Count = 1;
             }
             // std::cout << "\nDIIS Error\n" << DIISError << std::endl;
@@ -431,6 +565,8 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
                 AllFockMatrices.clear();
                 AllErrorMatrices.clear();
                 // NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals);
+                // GenerateRandomDensity(DensityMatrix);
+                DensityMatrix = Eigen::MatrixXd::Random(DensityMatrix.rows(), DensityMatrix.cols());
             }
             // std::cout << "\nDIIS Error\n" << DIISError << std::endl;
             // std::string pause;
@@ -447,7 +583,7 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
         {
             for(int i = 0; i < AllEnergies.size(); i++) // Compare energy with previous solutions.
             {
-                if(fabs(Energy + Input.Integrals["0 0 0 0"] - AllEnergies[i]) < 10E-5) // Checks to see if new energy is equal to any previous energy.
+                if(fabs(Energy + Input.Integrals["0 0 0 0"] - AllEnergies[i]) < 1E-5) // Checks to see if new energy is equal to any previous energy.
                 {
                     isUniqueSoln = false; // If it matches at one, set this flag to false so the SCF procedure can repeat for this solution.
                     WhichSoln = i;
@@ -458,7 +594,7 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
             {
                 for(int i = 0; i < Bias.size(); i++)
                 {
-                    if((DensityMatrix - std::get<0>(Bias[i])).squaredNorm() < 10E-3) // Means same density matrix as found before
+                    if((DensityMatrix - std::get<0>(Bias[i])).squaredNorm() < 1E-3) // Means same density matrix as found before
                     {
                         isUniqueSoln = false;
                         WhichSoln = i;

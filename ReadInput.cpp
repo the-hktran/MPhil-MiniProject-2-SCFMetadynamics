@@ -56,12 +56,14 @@ void InputObj::SetNames(std::string Int, std::string Overlap, std::string Out)
             Number of solutions desired
             Use DIIS? (1 / 0)
             Use MOM? (1 / 0)
-            How to step through density matrix space (1 / 0) = (Random / Rotation)
+            How to step through density matrix space (2 / 1 / 0) = (Complete Random / Random Normalized by Trace / Rotation)
+            Maximum number of SCF iterations. Use -1 for infinite.
    As an example, here is the first few lines of an input file for H2, in a space of four orbitals with 
    two electrons and we looking for 10 solutions. We want to use DIIS and MOM and we will choose a new density
-   by rotating an occupied and unoccupied orbital.
+   by rotating an occupied and unoccupied orbital. We proceed for at most 10000 SCF iterations.
             4 2 10
             1 1 0
+            10000
                 0.64985185942031   1   1   1   1
                 0.16712550470738   1   3   1   1
                 0.080102886434995  1   2   1   2

@@ -15,8 +15,22 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
 void BuildFockMatrix(Eigen::MatrixXd &FockMatrix, Eigen::MatrixXd &DensityMatrix, std::map<std::string, double> &Integrals, std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int NumElectrons);
 void GenerateRandomDensity(Eigen::MatrixXd &DensityMatrix);
 
-/* This function makes a new density matrix to be used for the next metadynamics iteration. It switches an occupied orbitals with
-   a random virtual orbital */
+/// <summary>
+/// This function makes a new density matrix to be used for the next metadynamics iteration. 
+/// It switches an occupied orbitals with a random virtual orbital
+/// </summary>
+/// <param name="DensityMatrix">
+/// Current density matrix. The new density matrix is stored here.
+/// </param>
+/// <param name="CoeffMatrix">
+/// Current coefficient matrix. This is what gets rotated and the new density matrix is calculated from this.
+/// </param>
+/// <param name="OccupiedOrbitals">
+/// Vector of occupied orbitals.
+/// </param>
+/// <param name="VirtualOrbitals">
+/// Vector of virtual orbitals.
+/// </param>
 void NewDensityMatrix(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &CoeffMatrix, std::vector<int> OccupiedOrbitals, std::vector<int> VirtualOrbitals)
 {
     int ExcludedOcc = rand() % OccupiedOrbitals.size();
@@ -65,7 +79,18 @@ void NewDensityMatrix(Eigen::MatrixXd &DensityMatrix, Eigen::MatrixXd &CoeffMatr
 
 }
 
-/* Increases N_x and decreases lambda_x when SCF converges to solution x */
+/// <summary>
+/// Changes the biasing parameters to increase the width of the biasing potential when
+/// the SCF method converges to the same solution. N_x is increased (increase height)
+/// while lambda_x is decreased (increase width).
+/// </summary>
+/// <param name="Bias">
+/// List of biases containing the parameters for each bias. The new parameters are stored here.
+/// </param>
+/// <param name="WhichSoln">
+/// Indicates which solution (order agrees with order in Bias) SCF has converged to. We only
+/// increment the bias associated with this solution.
+/// </param>
 void ModifyBias(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, short int WhichSoln)
 {
     if(WhichSoln == -1) // Means the solution was positive, not reconverged. Don't do anything.
@@ -87,6 +112,19 @@ void ModifyBias(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bi
     Bias[WhichSoln] = NewTuple;
 }
 
+/// <summary>
+/// Calculates the distance metric between two density matrices. Equation (7) 
+/// in AJW Thom and M Head-Gordon, Phys. Rev. Lett., 101, 193001 (2008)
+/// </summary>
+/// <param name="NumElectrons">
+/// Number of electrons.
+/// </param>
+/// <param name="FirstDensityMatrix">
+/// Density matrix.
+/// </param>
+/// <param name="SecondDensityMatrix">
+/// Other density matrix. We calculate the distance between these matrices.
+/// </param>
 double Metric(int NumElectrons, Eigen::MatrixXd &FirstDensityMatrix, Eigen::MatrixXd &SecondDensityMatrix)
 {
     double d = 0;
@@ -101,6 +139,19 @@ double Metric(int NumElectrons, Eigen::MatrixXd &FirstDensityMatrix, Eigen::Matr
     return d;
 }
 
+/// <summary>
+/// This calculates the form of the biasing potential in the modified Fock matrix. 
+/// This is the second term in Equation (9) of AJW Thom and M Head-Gordon, Phys. Rev. Lett., 101, 193001 (2008)
+/// </summary>
+/// <param name="Bias">
+/// List of biases. There is a term for each bias.
+/// </param>
+/// <param name="CurrentDensity">
+/// The current density matrix of the iteration. We want the distance of previous solutions to this density.
+/// </param>
+/// <param name="NumElectrons">
+/// Number of electrons. Needed for metric.
+/// </param>
 double BiasMatrixElement(int Row, int Col, std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, Eigen::MatrixXd &CurrentDensity, int NumElectrons)
 {
     double BiasElement = 0;
@@ -229,6 +280,8 @@ int main(int argc, char* argv[])
 
 	std::ofstream Output(Input.OutputName);
 
+    /* Set up the output file. */
+
 	Output << "Self-Consistent Field Metadynamics Calculation" << std::endl;
 	Output << "\n" << Input.NumSoln << " solutions desired." << std::endl;
 
@@ -239,6 +292,7 @@ int main(int argc, char* argv[])
     Output << "Use MOM?: " << Input.Options[1] << std::endl;
     Output << "Density choice: " << Input.DensityOption << "\n" << std::endl;
 
+    /* We calculate S^-1/2, which is used to put everything in an orthogonal basis */
     Eigen::SelfAdjointEigenSolver< Eigen::MatrixXd > EigensystemS(Input.OverlapMatrix);
     Eigen::SparseMatrix< double > LambdaSOrtho(Input.NumAO, Input.NumAO); // Holds the inverse sqrt matrix of eigenvalues of S ( Lambda^-1/2 )
     typedef Eigen::Triplet<double> T;
@@ -249,7 +303,7 @@ int main(int argc, char* argv[])
     }
     LambdaSOrtho.setFromTriplets(tripletList.begin(), tripletList.end());
     
-    Eigen::MatrixXd SOrtho = EigensystemS.eigenvectors() * LambdaSOrtho * EigensystemS.eigenvectors().transpose();
+    Eigen::MatrixXd SOrtho = EigensystemS.eigenvectors() * LambdaSOrtho * EigensystemS.eigenvectors().transpose(); // S^-1/2
 
     /* Initialize the density matrix. We're going to be smart about it and use the correct ground state density
        corresponding to Q-Chem outputs. Q-Chem uses an MO basis for its output, so the density matrix has ones
@@ -266,16 +320,18 @@ int main(int argc, char* argv[])
     }
     
     std::vector< std::tuple< Eigen::MatrixXd, double, double > > Bias; // Tuple containing DensityMatrix, N_x, lambda_x
-    Eigen::MatrixXd HCore(Input.NumAO, Input.NumAO);
+    Eigen::MatrixXd HCore(Input.NumAO, Input.NumAO); // T_e + V_eN
     Eigen::MatrixXd ZeroMatrix = Eigen::MatrixXd::Zero(Input.NumAO, Input.NumAO);
     BuildFockMatrix(HCore, ZeroMatrix, Input.Integrals, Bias, Input.NumElectrons); // Form HCore (D is zero)
 
     double Energy;
 
-    std::vector< double > AllEnergies;
+    std::vector< double > AllEnergies; // Stores all SCF energies. Used to check if solution is unique.
     Eigen::MatrixXd CoeffMatrix = Eigen::MatrixXd::Zero(Input.NumAO, Input.NumAO);
     std::vector<int> OccupiedOrbitals(Input.NumOcc);
     std::vector<int> VirtualOrbitals(Input.NumAO - Input.NumOcc);
+    /* Initialize the virtual and occupied orbitals. We choose the occupied orbitals to be the
+       lowest n / 2 orbitals first */
     for(int i = 0; i < Input.NumAO; i++)
     {
         if(i < Input.NumOcc)
@@ -288,18 +344,18 @@ int main(int argc, char* argv[])
         }
     }
 
-    int SCFCount = 0;
+    int SCFCount = 0; // Number of SCF iterations. Allows us to terminate after a maximum number of iterations.
     for(int i = 0; i < Input.NumSoln; i++)
     {
         std::tuple< Eigen::MatrixXd, double, double > tmpTuple;
         // NewDensityMatrix(DensityMatrix, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals); // CoeffMatrix is zero so this doesn't do anything the  first time.
         Energy = SCF(Bias, i + 1, DensityMatrix, Input, Output, SOrtho, HCore, AllEnergies, CoeffMatrix, OccupiedOrbitals, VirtualOrbitals, SCFCount, Input.MaxSCF);
-        if(SCFCount >= Input.MaxSCF && Input.MaxSCF != -1) 
+        if(SCFCount >= Input.MaxSCF && Input.MaxSCF != -1) // Means we have exceeded maximum SCF iterations, and we didn't ask to do it indefinately.
         {
             std::cout << "SCF MetaD: Maximum number of SCF iterations reached." << std::endl;
             break;
         }
-        tmpTuple = std::make_tuple(DensityMatrix, 0.1, 1);
+        tmpTuple = std::make_tuple(DensityMatrix, 0.1, 1); // Add a new bias for the new solution. Starting N_x and lambda_x are here.
         Bias.push_back(tmpTuple);
     }
 
