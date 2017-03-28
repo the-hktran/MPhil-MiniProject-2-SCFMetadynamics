@@ -14,7 +14,7 @@ This is a program designed to calculate multiple SCF solutions using a technique
 
 ## Compiling
 
-The SCF Metadynamics program uses the [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page) library for linear algebra. The program also utlizes the C++11 standard. The following should allow for compilation of the program.
+The SCF Metadynamics program uses the [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page) library for linear algebra. The program also utilizes the C++11 standard. The following should allow for compilation of the program.
 
 ```
 % g++ -std=c++11 -I /path/to/eigen Metadynamics.cpp SCF.cpp Fock.cpp ReadInput.cpp -O3 -o SCFMD
@@ -42,6 +42,7 @@ The input file is formatted as such. First, a string of input parameters should 
 - (Integer, Positive) Maximum number of SCF cycles.
 - (Double, Positive) Starting Norm of the biasing potential.
 - (Double, Positive) Starting Lambda of the biasing potential.
+
 Next, the values for the two electron integrals (nm|kl) are listed in the following format
 ```
 (nm|kl)     n     m     k     l
