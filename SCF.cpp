@@ -397,6 +397,7 @@ double SCFIteration(Eigen::MatrixXd &DensityMatrix, InputObj &Input, Eigen::Matr
 double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, int SolnNum, Eigen::MatrixXd &DensityMatrix, InputObj &Input, std::ofstream &Output, Eigen::MatrixXd &SOrtho, Eigen::MatrixXd &HCore, std::vector< double > &AllEnergies, Eigen::MatrixXd &CoeffMatrix, std::vector<int> &OccupiedOrbitals, std::vector<int> &VirtualOrbitals, int &SCFCount, int MaxSCF)
 {
 	double SCFTol = 10E-6; // SCF will terminate when the DIIS error is below this amount. 
+	int SCFReset = 200; // SCF will randomize the density matrix if a solution is still not found after this many iterations.
 
     // DensityMatrix = Eigen::MatrixXd::Zero(Input.NumAO, Input.NumAO);
 
@@ -442,7 +443,10 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
                DensityRMS = (DensityMatrix - DensityMatrixPrev).squaredNorm(); // CalcDensityRMS(DensityMatrix, DensityMatrixPrev);
                if(fabs(DensityRMS) < SCFTol * SCFTol * (DensityMatrix.squaredNorm() + 1) && fabs(Energy - EnergyPrev) < SCFTol * (fabs(Energy) + 1))
                {
-                   ContinueSCF = false;
+				   if (Count % SCFReset != 0) // And this isn't the first iteration after a reset, where the error is zero.
+				   {
+					   ContinueSCF = false;
+				   }
                }
                else
                {
@@ -456,7 +460,10 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
                 // DIISAbs = CalcMatrixRMS(DIISAbsMat);
                 if(fabs(DIISError) < SCFTol * SCFTol)
                 {
-                    ContinueSCF = false;
+					if (Count % SCFReset != 0) // And this isn't the first iteration after a reset, where the error is zero.
+					{
+						ContinueSCF = false;
+					}
                 }
                 else
                 {
@@ -487,7 +494,7 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
                 AllErrorMatrices.clear();
             }*/
 
-            if(Count % 200 == 0) // Shouldn't take this long.
+            if(Count % SCFReset == 0) // Shouldn't take this long.
             {
             //     // NewDensityMatrix(DensityMatrix, CoeffMatrix, Input.NumOcc, Input.NumAO);
             //     // Count = 1;
@@ -526,7 +533,10 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
                DensityRMS = (DensityMatrix - DensityMatrixPrev).squaredNorm();
                if(fabs(DensityRMS) < SCFTol * SCFTol * (DensityMatrix.squaredNorm() + 1) && fabs(Energy - EnergyPrev) < SCFTol * (fabs(Energy) + 1))
                {
-                   ContinueSCF = false;
+				   if (Count % SCFReset != 0) // And this isn't the first iteration after a reset, where the error is zero.
+				   {
+					   ContinueSCF = false;
+				   }
                }
                else
                {
@@ -538,7 +548,7 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
                 DIISError = AllErrorMatrices[AllErrorMatrices.size() - 1].squaredNorm();
                 // Eigen::MatrixXd DIISAbsMat = AllFockMatrices[AllFockMatrices.size() - 1] * DensityMatrix * Input.OverlapMatrix;
                 // DIISAbs = CalcMatrixRMS(DIISAbsMat);
-                if(fabs(DIISError) < SCFTol * SCFTol)
+                if(fabs(DIISError) < SCFTol * SCFTol && Count % SCFReset != 0)
                 {
                     ContinueSCF = false;
                 }
@@ -567,7 +577,7 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
                 AllErrorMatrices.clear();
             }*/
 
-            if(Count % 200 == 0)
+            if(Count % SCFReset == 0)
             {
                 AllFockMatrices.clear();
                 AllErrorMatrices.clear();
@@ -632,7 +642,7 @@ double SCF(std::vector< std::tuple< Eigen::MatrixXd, double, double > > &Bias, i
 	std::cout << "SCF MetaD: This solution took " << (clock() - ClockStart) / CLOCKS_PER_SEC << " seconds." << std::endl;
 	Output << "Solution " << SolnNum << " has converged with energy " << Energy + Input.Integrals["0 0 0 0"] << std::endl;
 	Output << "and Density Matrix:\n" << DensityMatrix << "\n";
-	Output << "This solution took " << (clock() - ClockStart) / CLOCKS_PER_SEC << " seconds." << std::endl;
+	Output << "This solution took " << (clock() - ClockStart) / CLOCKS_PER_SEC << " seconds.\n" << std::endl;
 
     return Energy + Input.Integrals["0 0 0 0"];
 }
